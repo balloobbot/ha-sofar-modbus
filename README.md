@@ -22,6 +22,15 @@ number prefix and a diagnostics download.
 Only Modbus TCP is supported so far. Serial (RTU) and delegating to Home Assistant's
 built-in Modbus hub are planned but not implemented.
 
+**Do not run this alongside `homeassistant-solax-modbus` on the same Home Assistant
+instance.** That integration pins `tmodbus==0.4.1` exactly in its own `manifest.json`, and
+Home Assistant re-processes that pin on every restart while the integration is loaded —
+forcing tmodbus back down to `0.4.1` even if something else needs newer. `modbus-connection`
+needs `tmodbus>=0.5.1`, so `modbus_connection.tmodbus` fails to import
+(`cannot import name 'create_async_udp_client' from 'tmodbus'`) as long as both are
+installed. Test this integration on a separate instance without `solax_modbus` loaded — see
+`CHANGELOG.md` in the workspace root for how this was diagnosed.
+
 ## Architecture
 
 Three layers, per `modbus-connection`'s own
