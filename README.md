@@ -113,6 +113,14 @@ uv pip install -e ".[test]"
 python3 tests/lib/test_smoke.py   # probe -> device -> entity-filter smoke test, mock backend
 ```
 
+## Versioning
+
+[`CHANGELOG.md`](CHANGELOG.md) tracks every release, [Keep a Changelog](https://keepachangelog.com/)
+format. This project follows [Semantic Versioning](https://semver.org/): while the major version
+is `0`, a `MINOR` bump means new user-facing capability (a new platform, new entities reachable
+from Home Assistant); a `PATCH` bump means a fix with no new capability. Every version bump in
+`manifest.json` gets a matching git tag and [GitHub Release](https://github.com/darkrain-nl/ha-sofar-modbus/releases).
+
 ## Roadmap
 
 See the project plan for the phased build-out (writes, quarantine/health, serial + Core-hub
