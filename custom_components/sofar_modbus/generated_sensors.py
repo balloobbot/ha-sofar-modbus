@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntityDescription, SensorStateClass
 from homeassistant.const import (
     PERCENTAGE,
     UnitOfApparentPower,
@@ -25,19 +25,16 @@ from homeassistant.helpers.entity import EntityCategory
 
 
 @dataclass(frozen=True, kw_only=True)
-class SofarSensorDescription:
-    """Static metadata for one generated sensor; value comes from `component`."""
+class SofarSensorDescription(SensorEntityDescription):
+    """A real SensorEntityDescription, plus which Component the value comes from.
 
-    key: str
-    component: str  # attribute name on SofarInverter: 'realtime' | 'settings' | 'battery_pack'
-    name: str
-    device_class: SensorDeviceClass | None = None
-    native_unit_of_measurement: object | None = None
-    state_class: SensorStateClass | None = None
-    entity_category: EntityCategory | None = None
-    icon: str | None = None
-    entity_registry_enabled_default: bool = True
-    suggested_display_precision: int | None = None
+    Must subclass SensorEntityDescription (not just duck-type its fields) —
+    SensorEntity reads attributes like entity_registry_visible_default and
+    suggested_unit_of_measurement straight off entity_description with no
+    _attr_ fallback, so a bespoke dataclass raises AttributeError on those.
+    """
+
+    component: str = 'realtime'  # attribute name on SofarInverter: 'realtime' | 'settings' | 'battery_pack'
 
 
 SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (

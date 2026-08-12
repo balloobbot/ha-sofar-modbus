@@ -44,14 +44,6 @@ class SofarSensor(SofarEntity, SensorEntity):
     def __init__(self, coordinator: SofarDataUpdateCoordinator, description: SofarSensorDescription) -> None:
         super().__init__(coordinator, description.key)
         self.entity_description = description
-        self._attr_name = description.name
-        self._attr_device_class = description.device_class
-        self._attr_native_unit_of_measurement = description.native_unit_of_measurement
-        self._attr_state_class = description.state_class
-        self._attr_entity_category = description.entity_category
-        self._attr_icon = description.icon
-        self._attr_entity_registry_enabled_default = description.entity_registry_enabled_default
-        self._attr_suggested_display_precision = description.suggested_display_precision
 
     @property
     def native_value(self) -> object:
