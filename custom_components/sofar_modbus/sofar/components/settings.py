@@ -12,6 +12,8 @@ from modbus_connection.model import Component, NumberField, gauge, int32, intege
 class SettingsReadback(Component):
     """37 fields, generated — see module docstring."""
 
+    max_span = 48
+
     feedin_limitation_mode = integer(4131, signed=False)  # 0x1023, allowedtypes=HYBRID | PV
     feedin_max_power = gauge(4132, 100, signed=False)  # 0x1024, allowedtypes=HYBRID | PV, internal
     eps_control = integer(4137, signed=False)  # 0x1029, allowedtypes=HYBRID | EPS

@@ -12,6 +12,8 @@ from modbus_connection.model import Component, gauge, integer, string, uint32
 class RealtimeData(Component):
     """209 fields, generated — see module docstring."""
 
+    max_span = 48
+
     system_state = integer(1028, signed=False)  # 0x0404, allowedtypes=HYBRID | PV
     fault_1 = integer(1029, signed=False)  # 0x0405, allowedtypes=HYBRID | PV
     fault_2 = integer(1030, signed=False)  # 0x0406, allowedtypes=HYBRID | PV

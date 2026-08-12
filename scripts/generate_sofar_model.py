@@ -126,6 +126,11 @@ def gen_component(class_name: str, entries: list[dict[str, Any]], commit: str) -
     lines.append(f"class {class_name}(Component):")
     lines.append(f'    """{len(entries)} fields, generated — see module docstring."""')
     lines.append("")
+    # Matches plugin_sofar.py's block_size=48: the real hardware/gateway
+    # times out on reads wider than this (seen live: 46- and 57-register
+    # blocks under the library's 125-register default failed consistently).
+    lines.append("    max_span = 48")
+    lines.append("")
 
     allowedtypes: dict[str, int] = {}
     seen_keys: dict[str, int] = {}  # key -> register, to dedupe repeated declarations

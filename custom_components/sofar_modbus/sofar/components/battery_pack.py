@@ -12,6 +12,8 @@ from modbus_connection.model import Component, gauge, int32, integer, string
 class BatteryPack(Component):
     """19 fields, generated — see module docstring."""
 
+    max_span = 48
+
     bms_version = integer(36875, signed=False)  # 0x900B, allowedtypes=BAT_BTS
     realtime_capacity = integer(36878, signed=False)  # 0x900E, allowedtypes=BAT_BTS
     total_voltage = gauge(36879, 0.1, signed=False)  # 0x900F, allowedtypes=BAT_BTS
