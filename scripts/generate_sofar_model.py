@@ -49,6 +49,25 @@ def upstream_commit() -> str:
 # ---------------------------------------------------------------------------
 HANDWRITTEN_FIELDS: set[str] = {"rtc", "battery_active_control", "parallel_control"}
 
+# Settings-area fields the device writes directly (upstream write_method=
+# WRITE_MULTISINGLE_MODBUS — a single register written via FC16, not FC06).
+# number.py/select.py write straight through component.write(key, value);
+# no local-storage entity needed since these have a real backing register.
+WRITABLE_FIELDS: set[str] = {"parallel_address", "remote_switch_on_off", "charger_use_mode"}
+
+# generated_sensors.py must not also emit a read-only sensor for a key that
+# gets a number/select entity instead — one entity per key, matching
+# upstream (a select's "current value" reads the same field directly).
+# Superset of WRITABLE_FIELDS: also covers WRITE_DATA_LOCAL selects whose
+# readback sensor shares their key (feedin_limitation_mode, eps_control,
+# passive_mode_timeout, passive_mode_timeout_action).
+CONTROL_ONLY_KEYS: set[str] = WRITABLE_FIELDS | {
+    "feedin_limitation_mode",
+    "eps_control",
+    "passive_mode_timeout",
+    "passive_mode_timeout_action",
+}
+
 
 def sanitize_key(key: str) -> str:
     """Fix the handful of upstream keys that aren't valid identifiers.
@@ -91,13 +110,17 @@ def field_call(entry: dict[str, Any]) -> tuple[str, int]:
     rdt = entry.get("register_data_type", {}).get("value", "REGISTER_U16")
     scale_kind = entry.get("scale", {}).get("kind")
     signed = rdt in ("REGISTER_S16", "REGISTER_S32")
+    key = sanitize_key(entry["key"]["value"])
+    # WRITE_MULTISINGLE_MODBUS upstream: a single register, written via
+    # FC16 rather than FC06 — force_fc16=True is the library's equivalent.
+    write_kwargs = ", writable=True, force_fc16=True" if key in WRITABLE_FIELDS else ""
 
     if scale_kind == "dict":
         convert = entry["scale"]["value"]
         # JSON round-trip is not used here (values come straight from AST),
         # so dict keys are already Python ints.
         convert_src = "{" + ", ".join(f"{k!r}: {v!r}" for k, v in convert.items()) + "}"
-        return f"NumberField({reg}, signed={signed}, convert={convert_src})", reg
+        return f"NumberField({reg}, signed={signed}, convert={convert_src}{write_kwargs})", reg
 
     if rdt == "REGISTER_STR":
         count = entry["wordcount"]["value"]
@@ -111,13 +134,13 @@ def field_call(entry: dict[str, Any]) -> tuple[str, int]:
     has_scale = isinstance(scale, (int, float)) and scale != 1
 
     if rdt == "REGISTER_U32":
-        return (f"uint32({reg}, scale={scale!r})" if has_scale else f"uint32({reg})"), reg
+        return (f"uint32({reg}, scale={scale!r}{write_kwargs})" if has_scale else f"uint32({reg}{write_kwargs})"), reg
     if rdt == "REGISTER_S32":
-        return (f"int32({reg}, scale={scale!r})" if has_scale else f"int32({reg})"), reg
+        return (f"int32({reg}, scale={scale!r}{write_kwargs})" if has_scale else f"int32({reg}{write_kwargs})"), reg
 
     if has_scale:
-        return f"gauge({reg}, {scale!r}, signed={signed})", reg
-    return f"integer({reg}, signed={signed})", reg
+        return f"gauge({reg}, {scale!r}, signed={signed}{write_kwargs})", reg
+    return f"integer({reg}, signed={signed}{write_kwargs})", reg
 
 
 def gen_component(class_name: str, entries: list[dict[str, Any]], commit: str) -> tuple[str, dict[str, int]]:
@@ -340,7 +363,7 @@ def gen_sensor_descriptions(entries: list[dict[str, Any]], component_of: dict[st
         if "{}" in raw_key:
             continue
         key = sanitize_key(raw_key)
-        if key in seen or entry.get("internal", {}).get("value"):
+        if key in seen or entry.get("internal", {}).get("value") or key in CONTROL_ONLY_KEYS:
             seen.add(key)
             continue
         seen.add(key)

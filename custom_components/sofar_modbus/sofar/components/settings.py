@@ -19,7 +19,7 @@ class SettingsReadback(Component):
     eps_control = integer(4137, signed=False)  # 0x1029, allowedtypes=HYBRID | EPS
     passive_eps_wait_time = integer(4138, signed=False)  # 0x102A, allowedtypes=HYBRID | EPS
     parallel_masterslave = integer(4150, signed=False)  # 0x1036, allowedtypes=HYBRID | PV | X3 | PM
-    parallel_address = integer(4151, signed=False)  # 0x1037, allowedtypes=HYBRID | PV | X3 | PM, internal
+    parallel_address = integer(4151, signed=False, writable=True, force_fc16=True)  # 0x1037, allowedtypes=HYBRID | PV | X3 | PM, internal
     bat_config_id = integer(4164, signed=False)  # 0x1044, allowedtypes=HYBRID
     bat_config_address_1 = integer(4165, signed=False)  # 0x1045, allowedtypes=HYBRID
     bat_config_protocol = integer(4166, signed=False)  # 0x1046, allowedtypes=HYBRID
@@ -40,8 +40,8 @@ class SettingsReadback(Component):
     bat_config_address_4 = integer(4182, signed=False)  # 0x1056, allowedtypes=HYBRID
     bat_config_tempco = gauge(4183, 0.1, signed=True)  # 0x1057, allowedtypes=HYBRID
     bat_config_voltage_float = gauge(4186, 0.1, signed=False)  # 0x105A, allowedtypes=HYBRID
-    remote_switch_on_off = integer(4356, signed=False)  # 0x1104, allowedtypes=HYBRID | PV, internal
-    charger_use_mode = integer(4368, signed=False)  # 0x1110, allowedtypes=HYBRID, internal
+    remote_switch_on_off = integer(4356, signed=False, writable=True, force_fc16=True)  # 0x1104, allowedtypes=HYBRID | PV, internal
+    charger_use_mode = integer(4368, signed=False, writable=True, force_fc16=True)  # 0x1110, allowedtypes=HYBRID, internal
     sync_rtc_result = integer(4106, signed=False)  # 0x100A, allowedtypes=HYBRID
     passive_mode_timeout = integer(4484, signed=False)  # 0x1184, allowedtypes=HYBRID
     passive_mode_timeout_action = integer(4485, signed=False)  # 0x1185, allowedtypes=HYBRID, internal

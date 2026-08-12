@@ -12,12 +12,32 @@ it stays a viable candidate for Home Assistant Core later. See that project's li
 
 ## Status
 
-**Early / read-only.** Sensors work; writable entities (numbers, selects, buttons) are not
-built yet. Verified against one PV-only inverter (`SS2E...`, 4.4 KTLX-G3, `PV | X3 | GEN`).
+**Early / read-only.** Sensors work and have been verified live against one PV-only inverter
+(`SS2E...`, 4.4 KTLX-G3, `PV | X3 | GEN`) — 88 entities, correct scaling, stable polling under
+a 48-register block cap the hardware needs (see `CHANGELOG.md` for what live testing caught
+and fixed: entity filtering, a silently-dropped scale factor, and this block-size limit).
+
+**Writable entities (numbers, selects, buttons) are not built yet — paused deliberately.**
+Three settings registers (`parallel_address`, `remote_switch_on_off`, `charger_use_mode`) are
+marked `writable=True` at the library level as groundwork, but **no write UI is exposed** —
+nothing can be triggered from Home Assistant yet. Writes are being held back until:
+
+1. **Whether this inverter's Modbus interface accepts writes at all is unconfirmed.** Writes
+   never worked via `homeassistant-solax-modbus` on this hardware either, and that may be
+   this inverter specifically (remote-write not enabled in its own menu, or similar) rather
+   than anything integration-side.
+2. **A firmware update with Modbus/SunSpec fixes may be relevant** and hasn't been installed
+   yet — worth doing before spending time debugging writes against firmware that's already
+   known to need an update.
+3. `pv_power_total`'s scale factor (0.1 vs 0.01) needs a daylight check against real PV
+   output before treating any of the current numeric decoding as fully trusted — see the
+   2024 upstream issue [wills106/homeassistant-solax-modbus#784](https://github.com/wills106/homeassistant-solax-modbus/issues/784),
+   opened by this repo's author, still unresolved there.
+
 HYBRID-only features — battery-pack telemetry, passive mode, EPS, TOU — are generated from
-the same register map but **have not been tested against real hardware**. If you have a
-HYBRID Sofar inverter and something misbehaves, please open an issue with your serial
-number prefix and a diagnostics download.
+the same register map but **have not been tested against real hardware** and won't be until
+a HYBRID Sofar inverter is available. If you have one and something misbehaves, please open
+an issue with your serial number prefix and a diagnostics download.
 
 Only Modbus TCP is supported so far. Serial (RTU) and delegating to Home Assistant's
 built-in Modbus hub are planned but not implemented.
