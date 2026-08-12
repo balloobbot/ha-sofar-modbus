@@ -1,0 +1,12 @@
+{
+    "domain": "sofar_modbus",
+    "name": "Sofar Inverter Modbus",
+    "codeowners": ["@darkrain-nl"],
+    "config_flow": true,
+    "documentation": "https://github.com/darkrain-nl/ha-sofar-modbus",
+    "integration_type": "hub",
+    "iot_class": "local_polling",
+    "issue_tracker": "https://github.com/darkrain-nl/ha-sofar-modbus/issues",
+    "requirements": ["modbus-connection[tmodbus]>=4.6.1,<5.0.0"],
+    "version": "0.1.0"
+}

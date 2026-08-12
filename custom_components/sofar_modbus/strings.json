@@ -1,0 +1,23 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Connect to a Sofar inverter",
+                "description": "Connect over Modbus TCP. The inverter model and register map are detected automatically from its serial number.",
+                "data": {
+                    "name": "Name",
+                    "host": "Host",
+                    "port": "Port",
+                    "modbus_addr": "Modbus unit ID"
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "Could not connect to the inverter, or the connection failed while reading it.",
+            "unrecognized_inverter": "The device answered, but its serial number doesn't match a known Sofar model."
+        },
+        "abort": {
+            "already_configured": "This inverter is already configured."
+        }
+    }
+}

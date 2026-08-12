@@ -1,0 +1,15 @@
+"""Integration-level constants — config keys, defaults. Distinct from sofar/const.py,
+which holds the device library's bitmasks and register-map tables.
+"""
+
+from __future__ import annotations
+
+DOMAIN = "sofar_modbus"
+ATTR_MANUFACTURER = "Sofar Solar"
+
+DEFAULT_NAME = "Sofar"
+DEFAULT_PORT = 502
+DEFAULT_MODBUS_ADDR = 1
+DEFAULT_SCAN_INTERVAL = 15  # seconds
+
+CONF_MODBUS_ADDR = "modbus_addr"
