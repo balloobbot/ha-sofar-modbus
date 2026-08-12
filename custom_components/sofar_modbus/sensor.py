@@ -1,10 +1,9 @@
 """Sensor platform — one SensorEntity per row in generated_sensors.SENSOR_DESCRIPTIONS.
 
-Only rows whose field survived this device's restrict_fields() (Phase 0 —
-device.py, driven by sofar/const.py's per-field allowedtypes) get an entity:
-a field the inverter doesn't serve reads as a missing attribute, so those
-rows are filtered out here rather than showing a permanently-unavailable
-entity.
+Only rows this inverter type actually serves get an entity, checked against
+SofarInverter's *_served_keys sets (device.py) — not against
+Component.declared_fields, which restrict_fields() deliberately leaves
+describing the full static layout regardless of what was excluded.
 """
 
 from __future__ import annotations
@@ -29,8 +28,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         component = getattr(device, description.component, None)
         if component is None:
             continue  # e.g. battery_pack on a PV-only inverter
-        if description.key not in component.declared_fields:
-            continue  # excluded by restrict_fields() for this inverter type
+        served_keys = getattr(device, f"{description.component}_served_keys")
+        if description.key not in served_keys:
+            continue  # not served by this inverter type
         entities.append(SofarSensor(coordinator, description))
 
     async_add_entities(entities)

@@ -29,7 +29,7 @@ def _seed_serial(unit: object, serial: str) -> dict[int, int]:
     return regs
 
 
-async def _run(serial: str, label: str) -> None:
+async def _run(serial: str, label: str) -> int:
     conn = MockModbusConnection()
     unit = conn.for_unit(1)
     seeded = _seed_serial(unit, serial)
@@ -58,18 +58,31 @@ async def _run(serial: str, label: str) -> None:
         if component is None:
             skipped += 1
             continue
-        if description.key not in component.declared_fields:
+        # NOT component.declared_fields: restrict_fields() deliberately
+        # leaves that describing the full static layout (an excluded field
+        # just decodes as None) — the *_served_keys sets computed in
+        # SofarInverter.__init__ are the actual per-inverter-type filter.
+        served_keys = getattr(device, f"{description.component}_served_keys")
+        if description.key not in served_keys:
             skipped += 1
             continue
         getattr(component, description.key)  # must not raise
         built += 1
     print(f"[{label}] {built} entities built, {skipped} skipped (unserved by this inverter type)")
     assert built > 0
+    return built
 
 
 async def main() -> None:
-    await _run("SS2ES104N5S445", "PV (live hardware serial)")
-    await _run("SP1XXES100XX", "HYBRID (SP1 prefix)")
+    pv_built = await _run("SS2ES104N5S445", "PV (live hardware serial)")
+    hybrid_built = await _run("SP1XXES100XX", "HYBRID (SP1 prefix)")
+    # Regression guard for the declared_fields-vs-served_keys bug: a PV
+    # inverter must end up with meaningfully fewer entities than a HYBRID
+    # one (battery, EPS, passive mode etc. are HYBRID-only), not "nearly
+    # everything" for both.
+    assert pv_built < hybrid_built * 0.8, (
+        f"PV ({pv_built}) should be well below HYBRID ({hybrid_built}) — allowedtypes filtering may not be applying"
+    )
     print("SMOKE TEST PASSED")
 
 
