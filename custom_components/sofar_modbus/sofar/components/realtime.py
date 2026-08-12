@@ -208,18 +208,18 @@ class RealtimeData(Component):
     battery_power_total = gauge(1639, 0.1, signed=True)  # 0x0667, allowedtypes=HYBRID
     battery_capacity_total = integer(1640, signed=False)  # 0x0668, allowedtypes=HYBRID
     battery_state_of_health_total = integer(1641, signed=False)  # 0x0669, allowedtypes=HYBRID
-    solar_generation_today = uint32(1668)  # 0x0684, allowedtypes=HYBRID | PV
-    solar_generation_total = uint32(1670)  # 0x0686, allowedtypes=HYBRID | PV
-    load_consumption_today = uint32(1672)  # 0x0688, allowedtypes=HYBRID | PV
-    load_consumption_total = uint32(1674)  # 0x068A, allowedtypes=HYBRID | PV
-    import_energy_today = uint32(1676)  # 0x068C, allowedtypes=HYBRID | PV
-    import_energy_total = uint32(1678)  # 0x068E, allowedtypes=HYBRID | PV
-    export_energy_today = uint32(1680)  # 0x0690, allowedtypes=HYBRID | PV
-    export_energy_total = uint32(1682)  # 0x0692, allowedtypes=HYBRID | PV
-    battery_input_energy_today = uint32(1684)  # 0x0694, allowedtypes=HYBRID
-    battery_input_energy_total = uint32(1686)  # 0x0696, allowedtypes=HYBRID
-    battery_output_energy_today = uint32(1688)  # 0x0698, allowedtypes=HYBRID
-    battery_output_energy_total = uint32(1690)  # 0x069A, allowedtypes=HYBRID
+    solar_generation_today = uint32(1668, scale=0.01)  # 0x0684, allowedtypes=HYBRID | PV
+    solar_generation_total = uint32(1670, scale=0.1)  # 0x0686, allowedtypes=HYBRID | PV
+    load_consumption_today = uint32(1672, scale=0.01)  # 0x0688, allowedtypes=HYBRID | PV
+    load_consumption_total = uint32(1674, scale=0.1)  # 0x068A, allowedtypes=HYBRID | PV
+    import_energy_today = uint32(1676, scale=0.01)  # 0x068C, allowedtypes=HYBRID | PV
+    import_energy_total = uint32(1678, scale=0.1)  # 0x068E, allowedtypes=HYBRID | PV
+    export_energy_today = uint32(1680, scale=0.01)  # 0x0690, allowedtypes=HYBRID | PV
+    export_energy_total = uint32(1682, scale=0.1)  # 0x0692, allowedtypes=HYBRID | PV
+    battery_input_energy_today = uint32(1684, scale=0.01)  # 0x0694, allowedtypes=HYBRID
+    battery_input_energy_total = uint32(1686, scale=0.1)  # 0x0696, allowedtypes=HYBRID
+    battery_output_energy_today = uint32(1688, scale=0.01)  # 0x0698, allowedtypes=HYBRID
+    battery_output_energy_total = uint32(1690, scale=0.1)  # 0x069A, allowedtypes=HYBRID
 
     # rtc: REGISTER_WORDS(6) — y/m/d/h/mi/s, one register each
     _rtc_year = integer(1068, signed=False)

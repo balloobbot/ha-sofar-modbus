@@ -107,13 +107,15 @@ def field_call(entry: dict[str, Any]) -> tuple[str, int]:
         # handled by HANDWRITTEN_FIELDS instead
         raise ValueError("REGISTER_WORDS must be hand-written")
 
-    if rdt == "REGISTER_U32":
-        return f"uint32({reg})", reg
-    if rdt == "REGISTER_S32":
-        return f"int32({reg})", reg
-
     scale = entry.get("scale", {}).get("value", 1) if scale_kind == "literal" else 1
-    if isinstance(scale, (int, float)) and scale != 1:
+    has_scale = isinstance(scale, (int, float)) and scale != 1
+
+    if rdt == "REGISTER_U32":
+        return (f"uint32({reg}, scale={scale!r})" if has_scale else f"uint32({reg})"), reg
+    if rdt == "REGISTER_S32":
+        return (f"int32({reg}, scale={scale!r})" if has_scale else f"int32({reg})"), reg
+
+    if has_scale:
         return f"gauge({reg}, {scale!r}, signed={signed})", reg
     return f"integer({reg}, signed={signed})", reg
 
