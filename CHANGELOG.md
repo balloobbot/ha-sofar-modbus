@@ -9,6 +9,19 @@ and GitHub Release.
 
 ## [Unreleased]
 
+### Changed
+
+- README: Status section updated with the first real-hardware findings for the write
+  entities (test instance, same physical inverter as production). FeedIn Limitation
+  Mode/Maximum Power confirmed via live write-and-readback; flagged as likely inert on
+  installs without an external CT/meter feeding `active_power_pcc_total` (this one included —
+  no fault bits set, but nothing to measure export with either). Active Power Control writes
+  reach the device without error but a clean curtailment observation is still pending.
+  Documented two things that caused real confusion in testing: the Update buttons commit
+  whatever's staged-or-live *at the moment of the press*, not changes made afterward; and
+  Active Power Control's percentage is of the inverter's rated power (`Pn`), unrelated to
+  FeedIn Maximum Power despite sitting next to it in the entity list.
+
 ## [0.2.0] - 2026-08-13
 
 ### Added

@@ -27,18 +27,38 @@ fails gets one retry before it's ever recorded as failed, and only the entities 
 component that's still failing after that go `unavailable` — not the other 87. See
 [Resilience](#resilience) below.
 
-**Write entities exist (`select`/`number`/`switch`/`button`) but haven't been pressed against
-real hardware yet** — this integration still isn't installed on the live instance (see the
-`tmodbus` pin conflict below), so every write path here has only run against the mock
-backend. What's built:
+**Write entities are built and have been exercised against the real inverter** — not on the
+main live instance (see the `tmodbus` pin conflict below), but on a separate test instance
+pointed at the same physical hardware over the network. What's built, and what testing found:
 
 - **Remote Switch On Off** (`select`) — a plain single-register write, applied immediately.
+  Not yet toggled in testing (it's plausibly a remote shutdown of the inverter's grid-tie —
+  left alone on a live producing inverter).
 - **FeedIn: Limitation Mode** (`select`) + **FeedIn: Maximum Power** (`number`) +
   **FeedIn: Update** (`button`) — the device only accepts mode and power as one combined
   write, so the select/number stage a value locally and the button commits both together.
+  **Confirmed working**: set to "Enabled - 3-phase limit" / 1000 W, and the device read the
+  new mode and power back on the next poll. **Likely inert on installs without an external
+  CT/meter wired to the inverter**, this one included — the register this reads/limits
+  against (`active_power_pcc_total`) only reflects real export with a meter feeding it (the
+  register map has dedicated meter-communication-failure fault codes), so without one the
+  write succeeds but has nothing to act on.
 - **Active Power Control** (`switch`) + **Active Power Control: Export Limit** (`number`) +
   **Active Power Control: Update** (`button`) — same staged-then-commit shape, for
-  `sofar-modbus`'s newest write path (register `0x1105`/`0x1106`).
+  `sofar-modbus`'s newest write path (register `0x1105`/`0x1106`). Writes reach the device
+  without error; a clean before/after output-drop hasn't been captured yet in testing (see
+  the ordering note below — the first couple of attempts committed stale staged values).
+  Unlike FeedIn Limitation, this caps the inverter's own output directly and needs no
+  external meter, so it should work on any install. **The percentage is of the inverter's
+  rated power** (`Pn` — 4.4 kW for this model), unrelated to FeedIn Maximum Power despite
+  sitting right next to it in the entity list: 50% here means ~2.2 kW, not 50% of whatever
+  the FeedIn number is set to.
+
+**The staged/commit entities have an ordering trap**: the Update button commits whatever the
+select/number/switch currently show *at the moment you press it* — staged or, if untouched,
+last-read-from-device — not anything changed afterward. Set the switch and/or number first,
+then press Update; pressing Update first and adjusting the inputs afterward silently
+re-writes the old values instead.
 
 This mirrors the exact UX `homeassistant-solax-modbus`'s own `plugin_sofar.py` uses for the
 same two register pairs (`WRITE_DATA_LOCAL` + a paired update button), not a new design.
@@ -198,9 +218,8 @@ from Home Assistant); a `PATCH` bump means a fix with no new capability. Every v
   why).
 - **`entry.runtime_data` idiom migration — done (`0.1.10`).**
 - **Phase 2 — done.** `select`/`number`/`switch`/`button` write entities for Remote Switch,
-  FeedIn Limitation, and Active Power Control — see [Status](#status). Not yet pressed
-  against real hardware; that's a separate, explicit next step once this integration is
-  actually installed somewhere live.
+  FeedIn Limitation, and Active Power Control — see [Status](#status) for what's been
+  exercised against the real inverter on a test instance so far.
 - **Phase 4 — not started.** HYBRID hardware verification (no HYBRID Sofar inverter
   available to test against).
 - **Phase 5 — not started.** Energy dashboard device.
