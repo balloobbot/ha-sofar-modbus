@@ -9,12 +9,47 @@ and GitHub Release.
 
 ## [Unreleased]
 
-### Added
+## [0.1.6] - 2026-08-13
 
-- `parallel_address`, `remote_switch_on_off`, `charger_use_mode` marked `writable=True` at the
-  `Component` level, and excluded from the generated read-only sensor list — groundwork for the
-  number/select write entities, not yet built. No new entity or behavior is reachable from Home
-  Assistant yet.
+### Changed
+
+- Replaced the vendored `sofar/` device library (extracted from `homeassistant-solax-modbus`'s
+  `plugin_sofar.py`, hand-debugged through 0.1.1–0.1.5) with the
+  [`sofar-modbus`](https://github.com/darkrain-nl/sofar-modbus) dependency, pinned to `v0.1.0` via
+  `git+https` (not yet on PyPI). It's a fork of an independently-built library on the same
+  `modbus-connection` foundation, covering the same register map but split per register-block
+  instead of one monolithic component — so it doesn't have the vendored code's `max_span`/
+  scale-factor bug classes ([0.1.4], [0.1.5]) by construction. `custom_components/sofar_modbus/sofar/`
+  and its two dedicated guard tests (`test_no_ha_imports.py`, `test_field_scales.py`) are gone; the
+  equivalent guards now live in the library's own test suite.
+- `config_flow.py`/`__init__.py` moved from the vendored two-phase `async_probe()` (raising on an
+  unrecognized serial) to the library's single-phase `SofarInverter(unit)` + `async_setup()` (which
+  leaves `.inverter_type` at zero instead of raising). A new local `probe.py` restores the same
+  `SofarUnrecognizedError` contract on top.
+- `generated_sensors.py`'s `component=` values now point at the library's ~20 per-register-block
+  attributes (`grid`, `pv_1_2`, `energy`, …) instead of the vendored `realtime`/`settings`/
+  `battery_pack` split. `scripts/generate_sofar_model.py` derives that mapping by introspecting the
+  installed library instead of generating the register/decode layer itself — the script only emits
+  HA-facing `SensorEntityDescription` metadata now.
+- `sensor.py`'s serving check is now `component in device.polled_components` (per-component) instead
+  of the vendored per-field `*_served_keys` sets — verified to produce an identical entity count for
+  both a PV-only and a synthetic HYBRID identity via the updated `tests/lib/test_smoke.py`.
+
+### Removed
+
+- The BTS battery-tower sensor rows (17 fields, upstream `BATTERY_SENSOR_TYPES`): the library
+  deliberately excludes the tower from its regular poll (`polled_components`) since its packs share
+  one register block and are read one at a time via `async_read_pack()`, not as part of a normal
+  update cycle. No live device serves these today; a battery-pack platform needs its own
+  pack-selection entity as a follow-up, not a plain sensor.
+
+### Note
+
+- Supersedes the `writable=True` groundwork from the previous unreleased entry: the library already
+  ships `parallel_address`/`remote_switch_on_off`/`charger_use_mode` as `writable=True`, plus
+  `async_write_*` convenience methods for feed-in limit, EPS control, passive-mode setpoints, RTC,
+  and an IV-curve-scan trigger. A number/select write platform is a smaller follow-up than
+  originally scoped, still not built in this release.
 
 ## [0.1.5] - 2026-08-12
 

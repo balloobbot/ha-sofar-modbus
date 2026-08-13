@@ -17,8 +17,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from modbus_connection import ModbusConnection, ModbusError, ModbusTimeoutError
 
+from sofar_modbus.modern.device import SofarInverter
+
 from .const import DOMAIN
-from .sofar.device import SofarInverter
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[None]):
             hass,
             _LOGGER,
             config_entry=entry,
-            name=f"{DOMAIN}_{device.identity.serial}",
+            name=f"{DOMAIN}_{device.serial_number}",
             update_interval=timedelta(seconds=scan_interval),
         )
         self.connection = connection

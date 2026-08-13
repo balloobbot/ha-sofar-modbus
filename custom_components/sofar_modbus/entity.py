@@ -16,12 +16,14 @@ class SofarEntity(CoordinatorEntity[SofarDataUpdateCoordinator]):
 
     def __init__(self, coordinator: SofarDataUpdateCoordinator, unique_id_suffix: str) -> None:
         super().__init__(coordinator)
-        identity = coordinator.device.identity
-        self._attr_unique_id = f"{identity.serial}_{unique_id_suffix}"
+        device = coordinator.device
+        serial = device.serial_number
+        assert serial is not None  # set by async_setup(), which the coordinator's first refresh requires
+        self._attr_unique_id = f"{serial}_{unique_id_suffix}"
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, identity.serial)},
+            identifiers={(DOMAIN, serial)},
             name=coordinator.config_entry.title,
             manufacturer=ATTR_MANUFACTURER,
-            model=identity.model or None,
-            serial_number=identity.serial,
+            model=device.model or None,
+            serial_number=serial,
         )

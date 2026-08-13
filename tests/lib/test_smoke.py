@@ -1,9 +1,10 @@
-"""Smoke test: probe -> SofarInverter -> entity filtering -> read every served
+"""Smoke test: setup -> SofarInverter -> entity filtering -> read every served
 field, against the mock backend, for both a PV-only and a HYBRID identity.
 
 Not a full pytest suite yet (that's tracked separately) — this is the
-end-to-end check the generator's output was validated against during
-development. Safe to run standalone: `python tests/lib/test_smoke.py`.
+end-to-end check generated_sensors.py's component mapping is validated
+against during development. Safe to run standalone:
+`python tests/lib/test_smoke.py`.
 """
 
 from __future__ import annotations
@@ -16,7 +17,25 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "custom_components"
 
 from generated_sensors import SENSOR_DESCRIPTIONS  # noqa: E402
 from modbus_connection.mock import MockModbusConnection  # noqa: E402
-from sofar.device import SofarInverter, async_probe  # noqa: E402
+from sofar_modbus.modern.device import SofarInverter  # noqa: E402
+
+
+def _check_all_descriptions_resolve() -> None:
+    """Every (component, key) row must resolve to a real attribute on
+    SofarInverter, regardless of which identity would poll it — catches a
+    wrong entry in generate_sofar_model.py's component mapping that the
+    PV/HYBRID runs below wouldn't exercise on their own (e.g. an EPS- or
+    MPPT-only field neither test identity serves).
+    """
+    device = SofarInverter.__new__(SofarInverter)
+    SofarInverter.__init__(device, unit=None)  # type: ignore[arg-type]
+    bad: list[str] = []
+    for description in SENSOR_DESCRIPTIONS:
+        component = getattr(device, description.component, None)
+        if component is None or not hasattr(component, description.key):
+            bad.append(f"{description.component}.{description.key}")
+    assert not bad, f"SENSOR_DESCRIPTIONS references missing attributes: {bad}"
+    print(f"all {len(SENSOR_DESCRIPTIONS)} sensor rows resolve to real attributes")
 
 
 def _seed_serial(unit: object, serial: str) -> dict[int, int]:
@@ -34,16 +53,13 @@ async def _run(serial: str, label: str) -> int:
     unit = conn.for_unit(1)
     seeded = _seed_serial(unit, serial)
 
-    identity = await async_probe(unit)
-    print(f"[{label}] identity: {identity}")
-
-    device = SofarInverter(unit, identity)
+    device = SofarInverter(unit)
+    await device.async_setup()
+    print(f"[{label}] serial={device.serial_number} model={device.model} type={device.inverter_type!r}")
 
     all_regs = dict(seeded)
-    for comp in (device.realtime, device.settings, device.battery_pack):
-        if comp is None:
-            continue
-        for _name, field in comp.declared_fields.items():
+    for comp in device.polled_components:
+        for _name, field in type(comp).declared_fields.items():
             addr = getattr(field, "address", None)
             if addr is not None:
                 all_regs.setdefault(addr, 1)
@@ -51,19 +67,12 @@ async def _run(serial: str, label: str) -> int:
 
     await device.async_update()
 
+    polled = set(device.polled_components)
     built = 0
     skipped = 0
     for description in SENSOR_DESCRIPTIONS:
-        component = getattr(device, description.component, None)
-        if component is None:
-            skipped += 1
-            continue
-        # NOT component.declared_fields: restrict_fields() deliberately
-        # leaves that describing the full static layout (an excluded field
-        # just decodes as None) — the *_served_keys sets computed in
-        # SofarInverter.__init__ are the actual per-inverter-type filter.
-        served_keys = getattr(device, f"{description.component}_served_keys")
-        if description.key not in served_keys:
+        component = getattr(device, description.component)
+        if component not in polled:
             skipped += 1
             continue
         getattr(component, description.key)  # must not raise
@@ -74,14 +83,15 @@ async def _run(serial: str, label: str) -> int:
 
 
 async def main() -> None:
+    _check_all_descriptions_resolve()
+
     pv_built = await _run("SS2ES104N5S445", "PV (live hardware serial)")
     hybrid_built = await _run("SP1XXES100XX", "HYBRID (SP1 prefix)")
-    # Regression guard for the declared_fields-vs-served_keys bug: a PV
-    # inverter must end up with meaningfully fewer entities than a HYBRID
-    # one (battery, EPS, passive mode etc. are HYBRID-only), not "nearly
-    # everything" for both.
+    # Regression guard: a PV inverter must end up with meaningfully fewer
+    # entities than a HYBRID one (battery, EPS, passive mode etc. are
+    # HYBRID-only), not "nearly everything" for both.
     assert pv_built < hybrid_built * 0.8, (
-        f"PV ({pv_built}) should be well below HYBRID ({hybrid_built}) — allowedtypes filtering may not be applying"
+        f"PV ({pv_built}) should be well below HYBRID ({hybrid_built}) — component filtering may not be applying"
     )
     print("SMOKE TEST PASSED")
 

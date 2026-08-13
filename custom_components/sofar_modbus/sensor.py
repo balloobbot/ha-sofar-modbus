@@ -1,9 +1,9 @@
 """Sensor platform — one SensorEntity per row in generated_sensors.SENSOR_DESCRIPTIONS.
 
-Only rows this inverter type actually serves get an entity, checked against
-SofarInverter's *_served_keys sets (device.py) — not against
-Component.declared_fields, which restrict_fields() deliberately leaves
-describing the full static layout regardless of what was excluded.
+Only rows this inverter type actually serves get an entity: sofar_modbus cuts
+each component along mask boundaries (a component is either wholly served by
+an inverter or not read at all), so "does device.polled_components include
+this row's component" is the whole check — no per-field filtering needed.
 """
 
 from __future__ import annotations
@@ -25,11 +25,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
     entities: list[SofarSensor] = []
     for description in SENSOR_DESCRIPTIONS:
-        component = getattr(device, description.component, None)
-        if component is None:
-            continue  # e.g. battery_pack on a PV-only inverter
-        served_keys = getattr(device, f"{description.component}_served_keys")
-        if description.key not in served_keys:
+        component = getattr(device, description.component)
+        if component not in device.polled_components:
             continue  # not served by this inverter type
         entities.append(SofarSensor(coordinator, description))
 

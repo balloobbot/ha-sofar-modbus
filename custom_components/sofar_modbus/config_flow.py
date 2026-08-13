@@ -12,9 +12,11 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PORT
 from modbus_connection import ModbusError
 
+from sofar_modbus.modern.device import SofarInverter
+
 from .connection import build_connection, unit_id
 from .const import CONF_MODBUS_ADDR, DEFAULT_MODBUS_ADDR, DEFAULT_NAME, DEFAULT_PORT, DOMAIN
-from .sofar.device import SofarUnrecognizedError, async_probe
+from .probe import SofarUnrecognizedError, async_setup_and_check
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -28,14 +30,15 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 )
 
 
-async def _async_probe(data: dict[str, Any]) -> tuple[str, str]:
+async def _async_probe(data: dict[str, Any]) -> tuple[str, str | None]:
     """Return (serial, model), or raise ModbusError / SofarUnrecognizedError."""
     connection = build_connection(data)
     try:
-        identity = await async_probe(connection.for_unit(unit_id(data)))
+        device = SofarInverter(connection.for_unit(unit_id(data)))
+        await async_setup_and_check(device)
     finally:
         await connection.close()
-    return identity.serial, identity.model
+    return device.serial_number or "", device.model
 
 
 class SofarConfigFlow(ConfigFlow, domain=DOMAIN):

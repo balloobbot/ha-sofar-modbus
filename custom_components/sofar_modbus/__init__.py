@@ -15,10 +15,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from modbus_connection import ModbusError
 
+from sofar_modbus.modern.device import SofarInverter
+
 from .connection import build_connection, unit_id
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
 from .coordinator import SofarDataUpdateCoordinator
-from .sofar.device import SofarInverter, SofarUnrecognizedError, async_probe
+from .probe import SofarUnrecognizedError, async_setup_and_check
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,12 +32,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.async_on_unload(connection.close)
 
     unit = connection.for_unit(unit_id(entry.data))
+    device = SofarInverter(unit)
     try:
-        identity = await async_probe(unit)
+        await async_setup_and_check(device)
     except (ModbusError, SofarUnrecognizedError) as err:
         raise ConfigEntryNotReady(f"cannot probe Sofar inverter: {err}") from err
 
-    device = SofarInverter(unit, identity)
     coordinator = SofarDataUpdateCoordinator(hass, entry, connection, device, DEFAULT_SCAN_INTERVAL)
     await coordinator.async_config_entry_first_refresh()
 
