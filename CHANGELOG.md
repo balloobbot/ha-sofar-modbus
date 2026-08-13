@@ -9,6 +9,16 @@ and GitHub Release.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-08-13
+
+### Fixed
+
+- Dropped `entity_category = CONFIG` from all Phase 2 write entities (`select`/`number`/
+  `switch`/`button`). Set on the assumption these were set-once settings; real usage on the
+  test instance showed otherwise — they're the primary way to interact with the inverter, and
+  `CONFIG` entities get tucked into a separate Configuration section below the main Controls
+  section on the device page instead of showing at the top.
+
 ### Changed
 
 - README: Status section updated with the first real-hardware findings for the write
@@ -21,6 +31,11 @@ and GitHub Release.
   whatever's staged-or-live *at the moment of the press*, not changes made afterward; and
   Active Power Control's percentage is of the inverter's rated power (`Pn`), unrelated to
   FeedIn Maximum Power despite sitting next to it in the entity list.
+
+### Verification
+
+- `ruff`/`mypy` clean (same 4 pre-existing unrelated errors as baseline). All four
+  `tests/lib/` scripts pass.
 
 ## [0.2.0] - 2026-08-13
 
