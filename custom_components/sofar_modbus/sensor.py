@@ -16,6 +16,7 @@ actually failed this poll go unavailable — not all of them.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -68,7 +69,7 @@ class SofarSensor(SofarEntity, SensorEntity):
         self.entity_description = description
 
     @property
-    def native_value(self) -> object:
+    def native_value(self) -> str | int | float | date | None:
         component = getattr(self.coordinator.device, self.entity_description.component)
         return getattr(component, self.entity_description.key)
 

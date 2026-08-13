@@ -14,6 +14,7 @@ instance. Test this integration on an instance without solax_modbus loaded.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 from homeassistant.const import CONF_HOST, CONF_PORT
@@ -24,8 +25,12 @@ from modbus_connection.tmodbus import ModbusConnection
 from .const import CONF_MODBUS_ADDR, DEFAULT_MODBUS_ADDR, DEFAULT_PORT
 
 
-def build_connection(data: dict[str, Any]) -> _Base:
-    """Build the connection for a config entry's data (TCP)."""
+def build_connection(data: Mapping[str, Any]) -> _Base:
+    """Build the connection for a config entry's data (TCP).
+
+    ``Mapping``, not ``dict``: a config entry's own ``.data`` is a read-only
+    ``MappingProxyType``, and this only ever reads from it.
+    """
     return ModbusConnection(
         ModbusTcpParams(
             host=data[CONF_HOST],
@@ -34,5 +39,5 @@ def build_connection(data: dict[str, Any]) -> _Base:
     )
 
 
-def unit_id(data: dict[str, Any]) -> int:
+def unit_id(data: Mapping[str, Any]) -> int:
     return int(data.get(CONF_MODBUS_ADDR, DEFAULT_MODBUS_ADDR))

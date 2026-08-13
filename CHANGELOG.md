@@ -9,6 +9,28 @@ and GitHub Release.
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-08-13
+
+### Fixed
+
+- The 4 mypy errors that had been sitting as accepted baseline noise since before Phase 2
+  are gone, not worked around:
+  - `entity.py`: `coordinator.config_entry` is typed `ConfigEntry | None` on
+    `DataUpdateCoordinator` generically (some coordinators run without one), but this one
+    never does — added the `assert` the code already relies on implicitly.
+  - `sensor.py`: `SofarSensor.native_value` was typed `-> object`, wider than
+    `SensorEntity`'s own `str | int | float | date | Decimal | None`, which mypy treats as
+    an invalid override. Narrowed to `str | int | float | date | None` (every field this
+    reads decodes to one of those; `bool`/`IntEnum`/`IntFlag` are already `int` subtypes,
+    `datetime` is already a `date` subtype — nothing here ever produces a `Decimal`).
+  - `connection.py`: `build_connection`/`unit_id` took `dict[str, Any]`, but a config
+    entry's own `.data` is a read-only `MappingProxyType` — not a `dict` structurally, even
+    though both functions only ever read from it. Widened both to `Mapping[str, Any]`.
+
+### Verification
+
+- `ruff`/`mypy` — zero errors, not 4 accepted ones. All four `tests/lib/` scripts pass.
+
 ## [0.2.1] - 2026-08-13
 
 ### Fixed

@@ -25,6 +25,7 @@ class SofarEntity(CoordinatorEntity[SofarDataUpdateCoordinator]):
         device = coordinator.device
         serial = device.serial_number
         assert serial is not None  # set by async_setup(), which the coordinator's first refresh requires
+        assert coordinator.config_entry is not None  # always constructed with one; see coordinator.py
         self._component = component
         self._attr_unique_id = f"{serial}_{unique_id_suffix}"
         self._attr_device_info = DeviceInfo(
