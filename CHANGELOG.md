@@ -9,6 +9,41 @@ and GitHub Release.
 
 ## [Unreleased]
 
+## [0.1.8] - 2026-08-13
+
+### Added
+
+- `coordinator.py` now gives a failed component one retry before accepting the failure,
+  and splits polled components into a fast tier (read every cycle) and a slow tier —
+  settings, energy counters, identity, derived from `generated_sensors.py`'s own
+  `state_class` metadata rather than a separately hand-maintained list — read only every
+  4th cycle (~60s at the default 15s scan interval). Prompted by comparing against
+  `solax_modbus` in production, which never shows anything unavailable during the day:
+  its Modbus client is constructed with `retries=1`, retrying every read once at the
+  transport level before a failure is ever visible, plus a full per-register quarantine
+  and background-recheck engine built around its own dynamic block re-planning.
+  `modbus_connection` deliberately disables backend retries (commit `115df8b`, "the
+  wrapper alone decides what happens next") and `sofar_modbus`'s `Component`/`ReadPlan`
+  model has no dynamic re-blocking to bisect around a bad register, so this is scaled to
+  what's actually reachable from `ha-sofar-modbus`: the retry (the practical equivalent
+  of `solax_modbus`'s `retries=1`, one layer up) and the tiered cadence (fewer registers
+  read per cycle, cutting exposure to the gateway's marginal timing), both entirely
+  local — no `sofar_modbus`/`modbus_connection` change needed. Register-level
+  bisection/quarantine stays out of scope; it would need an upstream API `sofar_modbus`
+  doesn't have (excluding specific components/registers from a poll).
+- A per-component `_consecutive_failures` counter, logged at `_LOGGER.debug` — no new
+  diagnostic entity yet, kept minimal until there's a reason to surface it in the UI.
+
+### Verification
+
+- New `tests/lib/test_coordinator.py`: a component that fails once then recovers before
+  the retry never appears in `UpdateReport.failed`; a failure that survives the retry is
+  tracked and doesn't affect a different fast-tier component polled the same cycle; the
+  existing disconnect-after-3-consecutive-timeouts recovery still fires correctly against
+  the new retry-aware failure tracking; a slow-tier component is absent from both
+  `updated`/`failed` on an off-cycle and present on its due cycle; a dead link
+  (`ModbusConnectionError`) still raises `UpdateFailed` immediately, mid-retry included.
+
 ## [0.1.7] - 2026-08-13
 
 ### Fixed
