@@ -12,7 +12,6 @@ from __future__ import annotations
 from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.const import PERCENTAGE, UnitOfPower
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .coordinator import SofarConfigEntry, SofarDataUpdateCoordinator
@@ -39,7 +38,6 @@ class FeedInMaxPowerNumber(SofarEntity, NumberEntity):
     staged when the button is pressed.
     """
 
-    _attr_entity_category = EntityCategory.CONFIG
     _attr_name = "FeedIn: Maximum Power"
     _attr_native_unit_of_measurement = UnitOfPower.WATT
     _attr_native_min_value = 0
@@ -63,7 +61,6 @@ class FeedInMaxPowerNumber(SofarEntity, NumberEntity):
 class ActivePowerExportLimitNumber(SofarEntity, NumberEntity):
     """Active Power Control: Export Limit — staged; press Update to apply."""
 
-    _attr_entity_category = EntityCategory.CONFIG
     _attr_name = "Active Power Control: Export Limit"
     _attr_native_unit_of_measurement = PERCENTAGE
     _attr_native_min_value = 0

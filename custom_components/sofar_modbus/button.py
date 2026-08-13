@@ -12,7 +12,6 @@ from __future__ import annotations
 from homeassistant.components.button import ButtonEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from modbus_connection import ModbusError
 
@@ -35,7 +34,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_
 class FeedInUpdateButton(SofarEntity, ButtonEntity):
     """FeedIn: Update — writes the staged (or last-read) mode and power together."""
 
-    _attr_entity_category = EntityCategory.CONFIG
     _attr_name = "FeedIn: Update"
 
     def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
@@ -59,7 +57,6 @@ class FeedInUpdateButton(SofarEntity, ButtonEntity):
 class ActivePowerControlUpdateButton(SofarEntity, ButtonEntity):
     """Active Power Control: Update — writes the staged (or last-read) enable flag and limit together."""
 
-    _attr_entity_category = EntityCategory.CONFIG
     _attr_name = "Active Power Control: Update"
 
     def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:

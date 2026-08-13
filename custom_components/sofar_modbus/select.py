@@ -12,7 +12,6 @@ from __future__ import annotations
 from homeassistant.components.select import SelectEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from modbus_connection import ModbusError
 
@@ -47,7 +46,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_
 class RemoteSwitchSelect(SofarEntity, SelectEntity):
     """Remote Switch On Off — a plain single-register write, applied immediately."""
 
-    _attr_entity_category = EntityCategory.CONFIG
     _attr_options = list(_REMOTE_SWITCH_OPTIONS.values())
     _attr_name = "Remote Switch On Off"
 
@@ -71,7 +69,6 @@ class RemoteSwitchSelect(SofarEntity, SelectEntity):
 class FeedInLimitationModeSelect(SofarEntity, SelectEntity):
     """FeedIn: Limitation Mode — staged; press FeedIn: Update to apply."""
 
-    _attr_entity_category = EntityCategory.CONFIG
     _attr_options = list(_FEEDIN_LIMITATION_OPTIONS.values())
     _attr_name = "FeedIn: Limitation Mode"
 

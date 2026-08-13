@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from sofar_modbus.modern import PowerControlFlags
@@ -42,7 +41,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_
 class ActivePowerControlSwitch(SofarEntity, SwitchEntity):
     """Active Power Control — staged; press Update to apply."""
 
-    _attr_entity_category = EntityCategory.CONFIG
     _attr_name = "Active Power Control"
 
     def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
