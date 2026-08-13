@@ -9,6 +9,52 @@ and GitHub Release.
 
 ## [Unreleased]
 
+## [0.1.11] - 2026-08-13
+
+### Changed
+
+- Review feedback (Balloob): `generated_sensors.py` is gone — `SofarSensorDescription` and
+  `SENSOR_DESCRIPTIONS` now live at the bottom of `sensor.py`, generated in place by
+  `scripts/generate_sofar_model.py` from a `# GENERATOR: generated below` marker onward; the
+  hand-written head (imports, `async_setup_entry`, `SofarSensor`) is read back from the
+  existing file and preserved verbatim on every regeneration. Created a real circular import
+  in the process (`sensor.py` needs `SofarConfigEntry` from `coordinator.py`; `coordinator.py`
+  needed `SENSOR_DESCRIPTIONS` from `sensor.py` for its tier split) — resolved by moving that
+  one import inside `_slow_tier_components()`, which only runs after both modules have
+  already finished loading.
+- Each generated row now only spells out a kwarg when it differs from HA's own dataclass
+  default — checked directly against `homeassistant/components/sensor/__init__.py` and
+  `homeassistant/helpers/entity.py` in the `core/` fork rather than assumed:
+  `device_class`/`native_unit_of_measurement`/`state_class`/`entity_category`/`icon`/
+  `suggested_display_precision` default to `None`, `entity_registry_enabled_default` defaults
+  to `True`. Cuts a typical row from 9 lines to as few as 3.
+- `probe.py` is gone. `__init__.py` no longer calls `SofarInverter.async_setup()` separately
+  or wraps it in a manual `try/except` — `coordinator.async_config_entry_first_refresh()`
+  already runs `async_update()` (which calls `async_setup()` internally on first use) and
+  already maps any `ModbusError` to `ConfigEntryNotReady` on its own (confirmed by reading
+  `DataUpdateCoordinator._async_config_entry_first_refresh()` directly in the `core/` fork,
+  not assumed). Only one manual check remains afterward: `if not device.inverter_type`, for
+  the unrecognized-serial case `sofar_modbus` doesn't raise for on its own.
+  `SofarUnrecognizedError` moves into `config_flow.py`, the only place still needing it
+  (to keep the `cannot_connect` vs `unrecognized_inverter` error-key distinction); its own
+  probe switches from `async_setup()` to `async_update()` too, for the same reason
+  `__init__.py`'s does — a one-time config-flow call, so the extra register reads cost
+  nothing and double as validation the device actually answers.
+- Relayed, not implemented: whether `sofar_modbus` itself should raise on an unrecognized
+  serial instead of silently leaving `inverter_type` at zero — consistent with the same
+  loud-failure-over-silent-partial-data philosophy that removed `ComponentGroup`'s old
+  catch-and-continue behavior upstream (commits `115df8b`/`e7ba2dc`). `ha-sofar-modbus`
+  still needs its own local check regardless of whether that lands.
+
+### Verification
+
+- `python3 tests/lib/test_smoke.py` — same 234-row/88-PV/173-HYBRID counts as before;
+  import switched from the deleted `generated_sensors` to
+  `custom_components.sofar_modbus.sensor`, same pattern `test_coordinator.py`/
+  `test_diagnostics.py` already used. `test_coordinator.py`'s `slow-tier-skipped-on-off-cycles`
+  case exercises `_slow_tier_components()`'s lazy import at runtime, not just mypy's static
+  check. `ruff`/`mypy` clean (same 4 pre-existing unrelated errors as baseline).
+
 ## [0.1.10] - 2026-08-13
 
 ### Changed

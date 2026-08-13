@@ -2,8 +2,8 @@
 field, against the mock backend, for both a PV-only and a HYBRID identity.
 
 Not a full pytest suite yet (that's tracked separately) — this is the
-end-to-end check generated_sensors.py's component mapping is validated
-against during development. Safe to run standalone:
+end-to-end check sensor.py's SENSOR_DESCRIPTIONS component mapping is
+validated against during development. Safe to run standalone:
 `python tests/lib/test_smoke.py`.
 """
 
@@ -13,12 +13,17 @@ import asyncio
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "custom_components" / "sofar_modbus"))
+# sensor.py has package-relative imports (.coordinator, .entity), so unlike
+# the old standalone generated_sensors.py it can't be loaded as a bare
+# top-level module — import it as part of custom_components.sofar_modbus
+# instead, the same way test_coordinator.py/test_diagnostics.py do.
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from generated_sensors import SENSOR_DESCRIPTIONS  # noqa: E402
 from modbus_connection.mock import MockModbusConnection  # noqa: E402
 from sofar_modbus.model import SofarComponentBase  # noqa: E402
 from sofar_modbus.modern.device import SofarInverter  # noqa: E402
+
+from custom_components.sofar_modbus.sensor import SENSOR_DESCRIPTIONS  # noqa: E402
 
 
 def _check_all_descriptions_resolve() -> None:

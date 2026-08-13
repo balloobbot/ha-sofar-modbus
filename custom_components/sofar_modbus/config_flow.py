@@ -16,7 +16,6 @@ from sofar_modbus.modern.device import SofarInverter
 
 from .connection import build_connection, unit_id
 from .const import CONF_MODBUS_ADDR, DEFAULT_MODBUS_ADDR, DEFAULT_NAME, DEFAULT_PORT, DOMAIN
-from .probe import SofarUnrecognizedError, async_setup_and_check
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,12 +29,22 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 )
 
 
+class SofarUnrecognizedError(Exception):
+    """The device answered, but its serial number matched no known Sofar model."""
+
+    def __init__(self, serial: str) -> None:
+        super().__init__(f"unrecognized Sofar inverter, serial number: {serial!r}")
+        self.serial = serial
+
+
 async def _async_probe(data: dict[str, Any]) -> tuple[str, str | None]:
     """Return (serial, model), or raise ModbusError / SofarUnrecognizedError."""
     connection = build_connection(data)
     try:
         device = SofarInverter(connection.for_unit(unit_id(data)))
-        await async_setup_and_check(device)
+        await device.async_update()
+        if not device.inverter_type:
+            raise SofarUnrecognizedError(device.serial_number or "")
     finally:
         await connection.close()
     return device.serial_number or "", device.model

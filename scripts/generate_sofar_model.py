@@ -1,17 +1,27 @@
 #!/usr/bin/env python3
-"""Generate custom_components/sofar_modbus/generated_sensors.py from upstream plugin_sofar.py.
+"""Generate the SENSOR_DESCRIPTIONS tail of custom_components/sofar_modbus/sensor.py
+from upstream plugin_sofar.py.
 
 Pipeline: extract_sofar_ast.py walks the upstream source with `ast` (no
 homeassistant import needed) and hands back plain-dict entity descriptions.
 This script turns those into HA SensorEntityDescription rows, tagging each
 with the sofar_modbus library component that serves it.
 
+sensor.py is a merged file: a hand-written head (imports, async_setup_entry,
+SofarSensor) and a generated tail (SofarSensorDescription, SENSOR_DESCRIPTIONS),
+split by the "# GENERATOR: generated below" marker. This script only replaces
+the tail — the hand-written head, including the full import block (which must
+stay at the top of the file; the generated content's own imports live there
+too, so there's one import block, not two), is read from the existing file and
+kept verbatim.
+
 The register/decode logic itself is no longer generated here — it lives in
 the `sofar-modbus` dependency (github.com/darkrain-nl/sofar-modbus). This
 script only maps each field key to the SofarInverter attribute that holds it,
-introspected from the installed library's Component.declared_fields, and
-emits the HA-facing metadata (name, device_class, unit, icon, category) that
-the library doesn't carry.
+introspected from the installed library, and emits the HA-facing metadata
+(name, device_class, unit, icon, category) that the library doesn't carry —
+only when it differs from the dataclass's own default, so a row doesn't spell
+out every field HA already defaults for it.
 
 Re-run whenever plugin_sofar.py is updated upstream; output is checked in,
 never imported at runtime by the generator itself.
@@ -29,9 +39,11 @@ sys.path.insert(0, str(Path(__file__).parent))
 import extract_sofar_ast as ex  # noqa: E402
 
 REPO_ROOT = Path(__file__).parent.parent
-GENERATED_ENTITIES = REPO_ROOT / "custom_components" / "sofar_modbus" / "generated_sensors.py"
+SENSOR_PY = REPO_ROOT / "custom_components" / "sofar_modbus" / "sensor.py"
 
 UPSTREAM_REPO = Path("/home/darkrain/homeassistant/homeassistant-solax-modbus")
+
+_GENERATED_MARKER = "# GENERATOR: generated below"
 
 
 def upstream_commit() -> str:
@@ -69,6 +81,19 @@ CONTROL_ONLY_KEYS: set[str] = WRITABLE_FIELDS | {
 # battery tower (BatteryPack.pack_time, same pattern) is excluded entirely,
 # see build_component_of().
 _COMPUTED_PROPERTY_FIELDS: dict[str, str] = {"rtc": "identity"}
+
+# HA's own default for each optional SensorEntityDescription/EntityDescription
+# field, as source text — checked against homeassistant/components/sensor/__init__.py
+# and homeassistant/helpers/entity.py directly. A row only spells out a field
+# when its value differs from this.
+_DEFAULTS: dict[str, str] = {
+    "device_class": "None",
+    "native_unit_of_measurement": "None",
+    "state_class": "None",
+    "entity_category": "None",
+    "icon": "None",
+    "entity_registry_enabled_default": "True",
+}
 
 
 def build_component_of() -> dict[str, str]:
@@ -124,32 +149,15 @@ def entry_field_src(entry: dict[str, Any], field: str, default: str = "None") ->
     return v["value"]  # source text, e.g. "SensorDeviceClass.POWER"
 
 
-HEADER = '''"""Generated HA sensor metadata from plugin_sofar.py @ {commit}.
+def _optional_kwarg_line(entry: dict[str, Any], field: str) -> str | None:
+    """Source line for one optional kwarg, or None if it matches HA's own default."""
+    default = _DEFAULTS[field]
+    src = entry_field_src(entry, field, default)
+    return None if src == default else f"        {field}={src},"
 
-Do not hand-edit — re-run scripts/generate_sofar_model.py. Rows with
-`internal=True` back computed values only and have no `key` here. The
-register/decode logic for `component` lives in the sofar-modbus dependency,
-not in this repo.
-"""
 
-from __future__ import annotations
-
-from dataclasses import dataclass
-
-from homeassistant.components.sensor import SensorDeviceClass, SensorEntityDescription, SensorStateClass
-from homeassistant.const import (
-    PERCENTAGE,
-    UnitOfApparentPower,
-    UnitOfElectricCurrent,
-    UnitOfElectricPotential,
-    UnitOfEnergy,
-    UnitOfFrequency,
-    UnitOfPower,
-    UnitOfReactivePower,
-    UnitOfTemperature,
-    UnitOfTime,
-)
-from homeassistant.helpers.entity import EntityCategory
+_TAIL_TEMPLATE = '''# GENERATOR: generated below from plugin_sofar.py @ {commit} by
+# scripts/generate_sofar_model.py — do not hand-edit past this line.
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -170,7 +178,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (\
 
 
 def gen_sensor_descriptions(entries: list[dict[str, Any]], component_of: dict[str, str], commit: str) -> str:
-    lines = [HEADER.format(commit=commit)]
+    lines = [_TAIL_TEMPLATE.format(commit=commit)]
 
     seen: set[str] = set()
     for entry in entries:
@@ -186,26 +194,40 @@ def gen_sensor_descriptions(entries: list[dict[str, Any]], component_of: dict[st
         if key not in component_of:
             raise KeyError(f"{key!r} has no sofar_modbus component — field renamed upstream or in the library?")
 
-        rounding = entry.get("rounding", {}).get("value")
-        precision = str(rounding) if isinstance(rounding, int) and rounding != 1 else "None"
-
         lines.append("    SofarSensorDescription(")
         lines.append(f"        key={key!r},")
         lines.append(f"        component={component_of[key]!r},")
         lines.append(f"        name={entry_field_src(entry, 'name')},")
-        lines.append(f"        device_class={entry_field_src(entry, 'device_class')},")
-        lines.append(f"        native_unit_of_measurement={entry_field_src(entry, 'native_unit_of_measurement')},")
-        lines.append(f"        state_class={entry_field_src(entry, 'state_class')},")
-        lines.append(f"        entity_category={entry_field_src(entry, 'entity_category')},")
-        lines.append(f"        icon={entry_field_src(entry, 'icon')},")
-        lines.append(
-            f"        entity_registry_enabled_default={entry_field_src(entry, 'entity_registry_enabled_default', 'True')},"
-        )
-        lines.append(f"        suggested_display_precision={precision},")
+        for field in (
+            "device_class",
+            "native_unit_of_measurement",
+            "state_class",
+            "entity_category",
+            "icon",
+            "entity_registry_enabled_default",
+        ):
+            optional_line = _optional_kwarg_line(entry, field)
+            if optional_line is not None:
+                lines.append(optional_line)
+        rounding = entry.get("rounding", {}).get("value")
+        if isinstance(rounding, int) and rounding != 1:
+            lines.append(f"        suggested_display_precision={rounding},")
         lines.append("    ),")
 
     lines.append(")")
     return "\n".join(lines) + "\n"
+
+
+def merged_sensor_py(tail: str) -> str:
+    """The hand-written head of sensor.py, verbatim, plus the freshly generated tail."""
+    current = SENSOR_PY.read_text()
+    marker_index = current.find(_GENERATED_MARKER)
+    if marker_index == -1:
+        raise ValueError(
+            f"{SENSOR_PY} has no {_GENERATED_MARKER!r} marker — can't tell where the "
+            "hand-written head ends and the generated tail begins"
+        )
+    return current[:marker_index] + tail
 
 
 def main() -> None:
@@ -217,14 +239,14 @@ def main() -> None:
     sensors = ex.extract_list(tree, "SENSOR_TYPES") or []
 
     component_of = build_component_of()
-    entities_src = gen_sensor_descriptions(sensors, component_of, commit)
-    GENERATED_ENTITIES.write_text(entities_src)
+    tail = gen_sensor_descriptions(sensors, component_of, commit)
+    SENSOR_PY.write_text(merged_sensor_py(tail))
 
-    print(f"sensor rows: {entities_src.count('SofarSensorDescription(')}", file=sys.stderr)
+    print(f"sensor rows: {tail.count('SofarSensorDescription(')}", file=sys.stderr)
     print(f"upstream commit: {commit}", file=sys.stderr)
 
     subprocess.run(
-        [sys.executable, "-m", "ruff", "check", "--fix", "--quiet", str(GENERATED_ENTITIES)],
+        [sys.executable, "-m", "ruff", "check", "--fix", "--quiet", str(SENSOR_PY)],
         cwd=REPO_ROOT,
         check=False,
     )

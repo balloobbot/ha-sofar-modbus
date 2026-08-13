@@ -16,7 +16,7 @@ missing (see the design note this ships alongside):
   SofarInverter.async_update() does it, to learn what this inverter
   serves), later polls split components into a fast tier (read every
   cycle) and a slow tier — settings, energy counters, identity, derived
-  from generated_sensors.py's own state_class metadata — read only every
+  from sensor.py's own state_class metadata — read only every
   _SLOW_TIER_EVERY_N_CYCLES-th cycle, cutting total registers read per poll.
 
 Also disconnect()s after repeated per-block timeouts to recover a link
@@ -41,7 +41,6 @@ from sofar_modbus.model import SofarComponentBase, UpdateReport
 from sofar_modbus.modern.device import SofarInverter
 
 from .const import DOMAIN
-from .generated_sensors import SENSOR_DESCRIPTIONS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -54,10 +53,16 @@ type SofarConfigEntry = ConfigEntry[SofarDataUpdateCoordinator]
 def _slow_tier_components() -> frozenset[str]:
     """Component names with no 'measurement' row — settings, counters, identity.
 
-    Derived from generated_sensors.py's own state_class metadata rather than a
-    separately hand-maintained list, so there's one source of truth for what
-    changes often enough to need every-cycle freshness.
+    Derived from sensor.py's own SENSOR_DESCRIPTIONS state_class metadata
+    rather than a separately hand-maintained list, so there's one source of
+    truth for what changes often enough to need every-cycle freshness.
+    Imported here, not at module level: sensor.py imports SofarConfigEntry
+    from this module, so a module-level import back would be circular — this
+    one only runs when a poll actually needs it, well after both modules have
+    finished loading.
     """
+    from .sensor import SENSOR_DESCRIPTIONS
+
     all_components = {description.component for description in SENSOR_DESCRIPTIONS}
     volatile = {
         description.component for description in SENSOR_DESCRIPTIONS if description.state_class == SensorStateClass.MEASUREMENT
