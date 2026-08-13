@@ -120,9 +120,54 @@ async def _check_enum_sensor_renders_as_text() -> None:
     print("enum-sensor-renders-as-text: PASSED")
 
 
+async def _check_total_increasing_dip_guard() -> None:
+    """load_consumption_total is total_increasing; a small device-side torn-read
+    dip must be held at the last good value, but a genuine large drop (a daily
+    counter's midnight reset) must pass straight through. Regression guard for
+    SofarSensor._smoothed_total_increasing.
+    """
+    from types import SimpleNamespace
+
+    from modbus_connection.encode import encode_int
+
+    from custom_components.sofar_modbus.sensor import SofarSensor
+
+    unit = MockModbusConnection().for_unit(1)
+    _seed_serial(unit, "SS2ES104N5S445")
+
+    def _set_load_consumption_total(kwh: float) -> None:
+        raw = round(kwh / 0.1)
+        for addr, word in zip(range(0x068A, 0x068C), encode_int(raw, count=2), strict=True):
+            unit.holding[addr] = word
+
+    _set_load_consumption_total(17506.4)
+    device = SofarInverter(unit)
+    report = await device.async_update()
+    assert "energy" in report.updated, f"energy component did not refresh: {report.failed}"
+
+    coordinator = SimpleNamespace(device=device, config_entry=SimpleNamespace(title="Test Sofar"))
+    description = next(d for d in SENSOR_DESCRIPTIONS if d.key == "load_consumption_total")
+    entity = SofarSensor(coordinator, description)  # type: ignore[arg-type]
+    assert entity.native_value == 17506.4, f"expected the seeded value, got {entity.native_value!r}"
+
+    _set_load_consumption_total(17506.3)  # a ~0.0006% dip -> torn-read noise
+    await device.async_update()
+    assert entity.native_value == 17506.4, f"a small dip should be held, got {entity.native_value!r}"
+
+    _set_load_consumption_total(17506.5)  # a normal increase
+    await device.async_update()
+    assert entity.native_value == 17506.5, f"a real increase should pass through, got {entity.native_value!r}"
+
+    _set_load_consumption_total(0.0)  # a genuine reset (e.g. daily counter at midnight)
+    await device.async_update()
+    assert entity.native_value == 0.0, f"a genuine reset should pass through, got {entity.native_value!r}"
+    print("total-increasing-dip-guard: PASSED")
+
+
 async def main() -> None:
     _check_all_descriptions_resolve()
     await _check_enum_sensor_renders_as_text()
+    await _check_total_increasing_dip_guard()
 
     pv_built = await _run("SS2ES104N5S445", "PV (live hardware serial)")
     hybrid_built = await _run("SP1XXES100XX", "HYBRID (SP1 prefix)")

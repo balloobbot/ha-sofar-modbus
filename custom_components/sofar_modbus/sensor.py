@@ -56,6 +56,19 @@ def _enum_label(member_name: str) -> str:
     return " ".join(word.capitalize() for word in member_name.split("_"))
 
 
+# How far below a total_increasing sensor's high-water mark a reading is still
+# treated as read noise rather than a genuine reset. The two dips actually
+# observed on this hardware (both on this integration and on solax_modbus
+# reading the same inverter) were ~0.003% and ~0.0006% — a device-side torn
+# read of a 32-bit counter split across two registers, not a comms failure.
+# 1% leaves a wide margin above that noise while staying far below HA core's
+# own reset_detected() threshold (drops below 90% of the previous value are
+# treated as a meter reset — see homeassistant/components/sensor/recorder.py),
+# so a genuine reset (e.g. a daily counter's midnight rollover to 0) still
+# passes straight through untouched either way.
+_TOTAL_INCREASING_DIP_TOLERANCE = 0.01
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     coordinator = entry.runtime_data
     report = coordinator.data
@@ -77,6 +90,7 @@ class SofarSensor(SofarEntity, SensorEntity):
     def __init__(self, coordinator: SofarDataUpdateCoordinator, description: SofarSensorDescription) -> None:
         super().__init__(coordinator, description.key, description.component)
         self.entity_description = description
+        self._total_increasing_high_water: float | None = None
 
     @property
     def native_value(self) -> str | int | float | date | None:
@@ -87,7 +101,22 @@ class SofarSensor(SofarEntity, SensorEntity):
         # in its `options`, rather than showing a bare number.
         if isinstance(value, IntEnum):
             return _enum_label(value.name)
+        if self.entity_description.state_class is SensorStateClass.TOTAL_INCREASING and isinstance(value, int | float):
+            return self._smoothed_total_increasing(float(value))
         return value
+
+    def _smoothed_total_increasing(self, value: float) -> float:
+        """Hold a total_increasing sensor at its high-water mark through a
+        small dip (device-side torn read of a multi-register counter) instead
+        of publishing a value HA would log as "not strictly increasing" — but
+        let a genuine drop (a daily counter's midnight reset, an actual meter
+        reset) through immediately. See _TOTAL_INCREASING_DIP_TOLERANCE.
+        """
+        high_water = self._total_increasing_high_water
+        if high_water is None or value >= high_water or value < high_water * (1 - _TOTAL_INCREASING_DIP_TOLERANCE):
+            self._total_increasing_high_water = value
+            return value
+        return high_water
 
 
 # GENERATOR: generated below from plugin_sofar.py @ 27875b3b by

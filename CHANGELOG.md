@@ -9,6 +9,44 @@ and GitHub Release.
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-08-13
+
+### Fixed
+
+- Energy counters (`total_increasing` sensors — solar/load/import/export generation and
+  battery in/out, 12 fields total) occasionally logged Home Assistant's "state is not
+  strictly increasing" warning, which links to "create a bug report" in the Logs UI — real
+  users hitting this would file spurious issues. Confirmed the underlying dip happens on
+  **both** `solax_modbus` and this integration against the same physical inverter
+  (`load_consumption_total` briefly reading 17506.3 after 17506.4): the device's own
+  firmware occasionally returns an inconsistent snapshot of a 32-bit counter split across
+  two registers, not something either integration's Modbus client causes or can prevent by
+  reading more carefully.
+  - Checked HA core's `reset_detected()`/`warn_dip()` in
+    `homeassistant/components/sensor/recorder.py`: a decrease only corrupts Energy
+    dashboard statistics if it drops below 90% of the previous value, and the warning logs
+    only once per entity ever — so the dips observed here (~0.003% and ~0.0006%) were
+    already harmless to the actual statistics. The fix is about the log noise and the
+    "file a bug report" prompt, not a correctness bug in the Energy dashboard.
+  - `SofarSensor` now keeps a per-entity high-water mark for `total_increasing` fields and
+    holds at it through a dip smaller than 1% of the mark — comfortably above the observed
+    noise, comfortably below HA's own 90% reset threshold, so a genuine reset (a daily
+    counter's midnight rollover, an actual device counter reset) still passes straight
+    through untouched.
+  - Deliberately scoped to `ha-sofar-modbus`'s entity layer, not the `sofar-modbus`
+    library: "look monotonic for HA's statistics engine" is HA-integration policy, not
+    something the register-decode library should encode — the library keeps faithfully
+    reporting whatever the device says.
+
+### Verification
+
+- New regression test in `tests/lib/test_smoke.py` covers all four cases: initial value
+  accepted, a small dip held, a real increase passed through, a genuine large drop (reset)
+  passed through immediately.
+- `ruff`/`mypy` clean; `test_smoke.py` and `test_write_entities.py` both still pass.
+- Pure entity-layer smoothing change — no register/poll behavior touched, so mock
+  verification is sufficient; not separately exercised against real hardware.
+
 ## [0.3.1] - 2026-08-13
 
 ### Fixed
