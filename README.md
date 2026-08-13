@@ -87,6 +87,26 @@ the same register map but **have not been tested against real hardware** and won
 a HYBRID Sofar inverter is available. If you have one and something misbehaves, please open
 an issue with your serial number prefix and a [diagnostics download](#resilience).
 
+**Phase 4 write controls (Charger Use Mode, EPS Mode, Passive Mode) are built and pass
+against a synthetic HYBRID identity (`modbus_connection.mock`) — the same tooling and depth
+of testing the three Phase 2 controls had before real hardware existed to try them on — but
+have not been exercised against a real HYBRID inverter.** What's built:
+
+- **Charger Use Mode** (`select`) — a plain single-register write, applied immediately, same
+  shape as Remote Switch On Off.
+- **EPS Mode** (`select`) — applied immediately; the device wants a reserved wait-time
+  register alongside it, which the library always writes as `0`. Only appears if the new
+  **Read EPS registers** setup option is enabled — off by default, since the library (and
+  the device) refuse this block on an inverter that isn't wired for EPS.
+- **Passive: Timeout** (`number`) + **Passive: Timeout Action** (`select`) + **Passive:
+  Timeout Update** (`button`), and **Passive: Desired Grid Power** + **Passive: Minimum/
+  Maximum Battery Power** (`number` ×3) + **Passive: Power Update** (`button`) — two
+  independent staged groups, same shape as FeedIn Limitation and Active Power Control.
+
+None of this can appear on a PV-only inverter (this project's own reference hardware
+included) — every entity above is gated behind the component the underlying register block
+belongs to, which a PV-only `inverter_type` never serves.
+
 Only Modbus TCP is supported so far. Serial (RTU) and delegating to Home Assistant's
 built-in Modbus hub are planned but not implemented.
 
@@ -220,8 +240,9 @@ from Home Assistant); a `PATCH` bump means a fix with no new capability. Every v
 - **Phase 2 — done.** `select`/`number`/`switch`/`button` write entities for Remote Switch,
   FeedIn Limitation, and Active Power Control — see [Status](#status) for what's been
   exercised against the real inverter on a test instance so far.
-- **Phase 4 — not started.** HYBRID hardware verification (no HYBRID Sofar inverter
-  available to test against).
+- **Phase 4 — code-complete, mock-verified (`0.3.0`).** Charger Use Mode, EPS Mode and
+  Passive Mode write entities — see [Status](#status). Hardware verification still pending:
+  no HYBRID Sofar inverter available to test against.
 - **Phase 5 — not started.** Energy dashboard device.
 - **Not started.** Serial (RTU) transport, delegating to Home Assistant's built-in Modbus
   hub.

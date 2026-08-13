@@ -16,7 +16,7 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from sofar_modbus.modern.device import SofarInverter
 
 from .connection import build_connection, unit_id
-from .const import DEFAULT_SCAN_INTERVAL
+from .const import CONF_READ_EPS, DEFAULT_SCAN_INTERVAL
 from .coordinator import SofarConfigEntry, SofarDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry) -> boo
     entry.async_on_unload(connection.close)
 
     unit = connection.for_unit(unit_id(entry.data))
-    device = SofarInverter(unit)
+    device = SofarInverter(unit, read_eps=entry.data.get(CONF_READ_EPS, False))
 
     coordinator = SofarDataUpdateCoordinator(hass, entry, connection, device, DEFAULT_SCAN_INTERVAL)
     # async_update() (called for us here) runs async_setup() internally on

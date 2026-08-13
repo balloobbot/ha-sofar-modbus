@@ -9,6 +9,34 @@ and GitHub Release.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-13
+
+### Added
+
+- Phase 4: `select`/`number`/`button` write entities for the HYBRID-only settings the
+  `sofar-modbus` library already had full read/write support for — **Charger Use Mode**
+  (`select`, immediate write), **EPS Mode** (`select`, immediate write), and **Passive
+  Mode** (`number`/`select`/`button` for the timeout pair, `number`×3/`button` for the
+  grid-power/battery-power triple, both staged-then-commit like FeedIn Limitation and
+  Active Power Control).
+- New **Read EPS registers** setup option (`CONF_READ_EPS`, default off) — without it,
+  `read_eps` was never passed to `SofarInverter`, so the `eps` component (and its existing
+  sensor) was never served on any inverter, regardless of hardware. EPS Mode needed this
+  fixed to mean anything.
+
+### Verification
+
+- **No HYBRID Sofar inverter is available to test against** (unchanged from Phase 3/4
+  planning) — these entities are tested only against a synthetic HYBRID identity via
+  `modbus_connection.mock`, the same tooling and depth the three Phase 2 controls had
+  before real hardware existed to try them on. `tests/lib/test_write_entities.py` gained a
+  second (HYBRID) fixture and 7 new tests covering every new entity's immediate-write or
+  stage-then-commit behavior plus one failure-surfaces case; all pass.
+- None of the new entities can appear on a PV-only inverter — component-gated the same way
+  every other write entity here is — so this ships with zero effect on the live or hatest
+  instances, both PV-only.
+- `tests/lib/test_smoke.py` unaffected (sensor-only); still passes unchanged.
+
 ## [0.2.2] - 2026-08-13
 
 ### Fixed

@@ -13,3 +13,4 @@ DEFAULT_MODBUS_ADDR = 1
 DEFAULT_SCAN_INTERVAL = 15  # seconds
 
 CONF_MODBUS_ADDR = "modbus_addr"
+CONF_READ_EPS = "read_eps"

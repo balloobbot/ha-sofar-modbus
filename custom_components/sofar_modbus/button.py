@@ -28,6 +28,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_
         entities.append(FeedInUpdateButton(coordinator))
     if "active_power_control" in served:
         entities.append(ActivePowerControlUpdateButton(coordinator))
+    if "passive" in served:
+        entities.append(PassiveTimeoutUpdateButton(coordinator))
+        entities.append(PassivePowerUpdateButton(coordinator))
     async_add_entities(entities)
 
 
@@ -74,4 +77,52 @@ class ActivePowerControlUpdateButton(SofarEntity, ButtonEntity):
             raise HomeAssistantError(f"could not write active power limit: {err}") from err
         self.coordinator.pending.pop("active_power_control_enabled", None)
         self.coordinator.pending.pop("active_power_export_limit", None)
+        await self.coordinator.async_request_refresh()
+
+
+class PassiveTimeoutUpdateButton(SofarEntity, ButtonEntity):
+    """Passive: Timeout Update — writes the staged (or last-read) timeout and action together."""
+
+    _attr_name = "Passive: Timeout Update"
+
+    def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
+        super().__init__(coordinator, "passive_timeout_update", "passive")
+
+    async def async_press(self) -> None:
+        passive = self.coordinator.device.passive
+        timeout = self.coordinator.pending_or_live("passive_mode_timeout", passive.passive_mode_timeout)
+        action = self.coordinator.pending_or_live("passive_mode_timeout_action", passive.passive_mode_timeout_action)
+        if timeout is None or action is None:
+            raise HomeAssistantError("passive-mode timeout has not been read from the device yet")
+        try:
+            await passive.async_write_timeout(int(timeout), action)
+        except (ModbusError, ValueError) as err:
+            raise HomeAssistantError(f"could not write passive-mode timeout: {err}") from err
+        self.coordinator.pending.pop("passive_mode_timeout", None)
+        self.coordinator.pending.pop("passive_mode_timeout_action", None)
+        await self.coordinator.async_request_refresh()
+
+
+class PassivePowerUpdateButton(SofarEntity, ButtonEntity):
+    """Passive: Power Update — writes the staged (or last-read) grid power and battery power window together."""
+
+    _attr_name = "Passive: Power Update"
+
+    def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
+        super().__init__(coordinator, "passive_power_update", "passive")
+
+    async def async_press(self) -> None:
+        passive = self.coordinator.device.passive
+        grid_power = self.coordinator.pending_or_live("passive_mode_grid_power", passive.passive_mode_grid_power)
+        battery_min = self.coordinator.pending_or_live("passive_mode_battery_power_min", passive.passive_mode_battery_power_min)
+        battery_max = self.coordinator.pending_or_live("passive_mode_battery_power_max", passive.passive_mode_battery_power_max)
+        if grid_power is None or battery_min is None or battery_max is None:
+            raise HomeAssistantError("passive-mode power setpoints have not been read from the device yet")
+        try:
+            await passive.async_write_power(int(grid_power), int(battery_min), int(battery_max))
+        except (ModbusError, ValueError) as err:
+            raise HomeAssistantError(f"could not write passive-mode power setpoints: {err}") from err
+        self.coordinator.pending.pop("passive_mode_grid_power", None)
+        self.coordinator.pending.pop("passive_mode_battery_power_min", None)
+        self.coordinator.pending.pop("passive_mode_battery_power_max", None)
         await self.coordinator.async_request_refresh()
