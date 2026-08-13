@@ -9,6 +9,39 @@ and GitHub Release.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-08-13
+
+### Fixed
+
+- Enum-typed sensors (`System State`, `Update System Time Operation Result`, `Parallel
+  Master-Salve`, `BatConfig: Protocol`, `BatConfig: Cell Type`) rendered as bare numbers
+  (`0`, `1`, `2`...) instead of text — noticed live on `hatest`, where `System State`
+  showed `2` where `solax_modbus` shows "Grid-connected". Root cause: these fields decode
+  to a real `IntEnum` (`SystemState` etc. in the `sofar-modbus` library), but
+  `SofarSensorDescription` never set `device_class=SensorDeviceClass.ENUM`/`options`, and
+  `SofarSensor.native_value` returned the raw enum member — Python 3.11 changed
+  `IntEnum.__str__` to print just the int, unlike plain `Enum`.
+  - `scripts/generate_sofar_model.py` now detects enum-typed fields from the library's own
+    field metadata (`NumberField.convert`, whenever it's an `IntEnum` subclass — `IntFlag`
+    fields like the Fault sensors are excluded automatically, since `IntFlag` doesn't
+    subclass `IntEnum`) and emits `device_class=ENUM`/`options` for them, with labels
+    generated mechanically from the enum member names (Title Case) rather than depending on
+    upstream `plugin_sofar.py`'s own `scale` dict, which isn't a real
+    `SensorEntityDescription` field and was never extracted.
+  - `SofarSensor.native_value` now translates any `IntEnum` value through the matching
+    label before returning it.
+  - Labels don't byte-for-byte match `solax_modbus`'s hand-picked strings (e.g. `"Grid
+    Connected"` vs `"Grid-connected"`) — acceptable, nothing else in this integration
+    mirrors upstream's exact text.
+
+### Verification
+
+- New regression test in `tests/lib/test_smoke.py` asserts `system_state`'s `native_value`
+  returns `"Grid Connected"`, not a raw enum/int, against the mock backend.
+- `ruff`/`mypy` clean; `test_smoke.py` and `test_write_entities.py` both still pass.
+- Pure display-mapping change — no register/poll behavior touched, so mock verification is
+  sufficient; not separately exercised against real hardware.
+
 ## [0.3.0] - 2026-08-13
 
 ### Added

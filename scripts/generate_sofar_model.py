@@ -32,6 +32,8 @@ from __future__ import annotations
 import ast
 import subprocess
 import sys
+from collections.abc import Iterator
+from enum import IntEnum
 from pathlib import Path
 from typing import Any
 
@@ -96,8 +98,12 @@ _DEFAULTS: dict[str, str] = {
 }
 
 
-def build_component_of() -> dict[str, str]:
-    """field key -> SofarInverter attribute, from the library's own declared_fields.
+def _iter_declared_fields() -> Iterator[tuple[str, str, Any]]:
+    """Yield (key, component attr, field) for every declared field on every
+    polled component, from a throwaway SofarInverter (construction does no
+    I/O — see connection.py). One source of truth for both the key->component
+    mapping below and the key->enum-type mapping in build_enum_of(), instead
+    of two throwaway devices built the same way.
 
     Deliberately excludes BatteryPack: sofar_modbus.modern.device.SofarInverter
     leaves it out of polled_components on purpose (its packs share one
@@ -110,20 +116,50 @@ def build_component_of() -> dict[str, str]:
     import sofar_modbus.modern.device as dev
     from sofar_modbus.model import SofarComponentBase
 
-    # A throwaway SofarInverter (construction does no I/O — see connection.py)
-    # gives every attribute name SofarInverter.__init__ assigns, with no need
-    # to hand-list them here too: one ModbusUnit-less source of truth instead
-    # of two to keep in sync as the library's component set changes.
     device = dev.SofarInverter.__new__(dev.SofarInverter)
     dev.SofarInverter.__init__(device, unit=None)  # type: ignore[arg-type]
 
-    component_of: dict[str, str] = dict(_COMPUTED_PROPERTY_FIELDS)
     for attr, value in vars(device).items():
         if attr == "battery_pack" or not isinstance(value, SofarComponentBase):
             continue
-        for key in type(value).declared_fields:
-            component_of[key] = attr
+        for key, field in type(value).declared_fields.items():
+            yield key, attr, field
+
+
+def build_component_of() -> dict[str, str]:
+    """field key -> SofarInverter attribute, from the library's own declared_fields."""
+    component_of: dict[str, str] = dict(_COMPUTED_PROPERTY_FIELDS)
+    for key, attr, _field in _iter_declared_fields():
+        component_of[key] = attr
     return component_of
+
+
+def build_enum_of() -> dict[str, type[IntEnum]]:
+    """field key -> its IntEnum type, for fields whose raw value needs a text
+    label rather than showing as a bare number — Python 3.11 changed
+    IntEnum.__str__ to print just the int, unlike plain Enum.
+
+    IntFlag fields (the Fault1-12 bitmasks, PowerControlFlags) are skipped
+    automatically: IntFlag does not subclass IntEnum, so issubclass() below
+    never matches them — leave their current rendering alone.
+    """
+    enum_of: dict[str, type[IntEnum]] = {}
+    for key, _attr, field in _iter_declared_fields():
+        convert = getattr(field, "convert", None)
+        if isinstance(convert, type) and issubclass(convert, IntEnum):
+            enum_of[key] = convert
+    return enum_of
+
+
+def _enum_label(member_name: str) -> str:
+    """Title-Case a SCREAMING_SNAKE_CASE enum member name for display —
+    e.g. "GRID_CONNECTED" -> "Grid Connected". Mechanical, not matching
+    upstream's own hand-picked strings (its `scale` kwarg — a raw-int-to-string
+    dict, not a real SensorEntityDescription field, so it's never extracted).
+    Same style as select.py's hand-written _XXX_OPTIONS dicts elsewhere in
+    this integration.
+    """
+    return " ".join(word.capitalize() for word in member_name.split("_"))
 
 
 def sanitize_key(key: str) -> str:
@@ -177,7 +213,9 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (\
 '''
 
 
-def gen_sensor_descriptions(entries: list[dict[str, Any]], component_of: dict[str, str], commit: str) -> str:
+def gen_sensor_descriptions(
+    entries: list[dict[str, Any]], component_of: dict[str, str], enum_of: dict[str, type[IntEnum]], commit: str
+) -> str:
     lines = [_TAIL_TEMPLATE.format(commit=commit)]
 
     seen: set[str] = set()
@@ -198,6 +236,16 @@ def gen_sensor_descriptions(entries: list[dict[str, Any]], component_of: dict[st
         lines.append(f"        key={key!r},")
         lines.append(f"        component={component_of[key]!r},")
         lines.append(f"        name={entry_field_src(entry, 'name')},")
+
+        # Enum-typed fields get their device_class/options from the library's
+        # own type, not from upstream's `scale` dict (not a real
+        # SensorEntityDescription field, so entry_field_src never sees it).
+        enum_type = enum_of.get(key)
+        if enum_type is not None:
+            lines.append("        device_class=SensorDeviceClass.ENUM,")
+            options = [_enum_label(member.name) for member in enum_type]
+            lines.append(f"        options={py_repr(options)},")
+
         for field in (
             "device_class",
             "native_unit_of_measurement",
@@ -206,6 +254,8 @@ def gen_sensor_descriptions(entries: list[dict[str, Any]], component_of: dict[st
             "icon",
             "entity_registry_enabled_default",
         ):
+            if field == "device_class" and enum_type is not None:
+                continue  # already emitted above, from the library's own enum type
             optional_line = _optional_kwarg_line(entry, field)
             if optional_line is not None:
                 lines.append(optional_line)
@@ -239,7 +289,8 @@ def main() -> None:
     sensors = ex.extract_list(tree, "SENSOR_TYPES") or []
 
     component_of = build_component_of()
-    tail = gen_sensor_descriptions(sensors, component_of, commit)
+    enum_of = build_enum_of()
+    tail = gen_sensor_descriptions(sensors, component_of, enum_of, commit)
     SENSOR_PY.write_text(merged_sensor_py(tail))
 
     print(f"sensor rows: {tail.count('SofarSensorDescription(')}", file=sys.stderr)

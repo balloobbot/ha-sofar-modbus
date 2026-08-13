@@ -94,8 +94,35 @@ async def _run(serial: str, label: str) -> int:
     return built
 
 
+async def _check_enum_sensor_renders_as_text() -> None:
+    """system_state is IntEnum-backed (SystemState); native_value must show a
+    label like "Grid Connected", not a bare int — Python 3.11 changed
+    IntEnum.__str__ to print just the number, which is what the frontend
+    showed before device_class=ENUM/options were wired up. Regression guard
+    for that wiring in sensor.py and generate_sofar_model.py.
+    """
+    from types import SimpleNamespace
+
+    from custom_components.sofar_modbus.sensor import SofarSensor
+
+    unit = MockModbusConnection().for_unit(1)
+    _seed_serial(unit, "SS2ES104N5S445")
+    unit.holding[0x0404] = 2  # system_state -> GRID_CONNECTED
+
+    device = SofarInverter(unit)
+    report = await device.async_update()
+    assert "state" in report.updated, f"system_state's component did not refresh: {report.failed}"
+
+    coordinator = SimpleNamespace(device=device, config_entry=SimpleNamespace(title="Test Sofar"))
+    description = next(d for d in SENSOR_DESCRIPTIONS if d.key == "system_state")
+    entity = SofarSensor(coordinator, description)  # type: ignore[arg-type]
+    assert entity.native_value == "Grid Connected", f"expected a text label, got {entity.native_value!r}"
+    print("enum-sensor-renders-as-text: PASSED")
+
+
 async def main() -> None:
     _check_all_descriptions_resolve()
+    await _check_enum_sensor_renders_as_text()
 
     pv_built = await _run("SS2ES104N5S445", "PV (live hardware serial)")
     hybrid_built = await _run("SP1XXES100XX", "HYBRID (SP1 prefix)")

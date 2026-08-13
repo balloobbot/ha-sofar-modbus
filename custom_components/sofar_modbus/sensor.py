@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
+from enum import IntEnum
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -46,6 +47,15 @@ from .entity import SofarEntity
 # GENERATOR: hand-written below, preserved verbatim by scripts/generate_sofar_model.py.
 
 
+def _enum_label(member_name: str) -> str:
+    """Must match scripts/generate_sofar_model.py's _enum_label — the label
+    format used here and the `options` list declared on an ENUM sensor's
+    description have to agree, or HA logs a state that isn't one of the
+    declared options.
+    """
+    return " ".join(word.capitalize() for word in member_name.split("_"))
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     coordinator = entry.runtime_data
     report = coordinator.data
@@ -71,7 +81,13 @@ class SofarSensor(SofarEntity, SensorEntity):
     @property
     def native_value(self) -> str | int | float | date | None:
         component = getattr(self.coordinator.device, self.entity_description.component)
-        return getattr(component, self.entity_description.key)
+        value = getattr(component, self.entity_description.key)
+        # IntEnum.__str__ prints just the int since Python 3.11 (unlike plain
+        # Enum) — translate to the label an ENUM-device-class sensor declared
+        # in its `options`, rather than showing a bare number.
+        if isinstance(value, IntEnum):
+            return _enum_label(value.name)
+        return value
 
 
 # GENERATOR: generated below from plugin_sofar.py @ 27875b3b by
@@ -96,6 +112,8 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         key='system_state',
         component='state',
         name='System State',
+        device_class=SensorDeviceClass.ENUM,
+        options=['Waiting', 'Checking', 'Grid Connected', 'Emergency Power Supply', 'Recoverable Fault', 'Permanent Fault', 'Upgrading', 'Self Charging'],
     ),
     SofarSensorDescription(
         key='fault_1',
@@ -1823,6 +1841,8 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         key='parallel_masterslave',
         component='parallel',
         name='Parallel Master-Salve',
+        device_class=SensorDeviceClass.ENUM,
+        options=['Slave', 'Master'],
     ),
     SofarSensorDescription(
         key='bat_config_id',
@@ -1844,6 +1864,8 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         key='bat_config_protocol',
         component='battery_config_id',
         name='BatConfig: Protocol',
+        device_class=SensorDeviceClass.ENUM,
+        options=['First Flight Built In Bms Default', 'Pie Energy Protocol Pylon', 'First Flight Protocol General', 'Amass', 'Lg', 'Alphaess', 'Catl', 'Weco', 'Fronus', 'Ems', 'Nilar', 'Bts 5k', 'Move For'],
         entity_category=EntityCategory.DIAGNOSTIC,
         icon='mdi:battery-check-outline',
         entity_registry_enabled_default=False,
@@ -1943,6 +1965,8 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         key='bat_config_cell_type',
         component='battery_config',
         name='BatConfig: Cell Type',
+        device_class=SensorDeviceClass.ENUM,
+        options=['Lead Acid', 'Lithium Iron Phosphate', 'Ternary', 'Lithium Titanate', 'Agm', 'Gel', 'Flooded'],
         entity_category=EntityCategory.DIAGNOSTIC,
         icon='mdi:battery-check-outline',
         entity_registry_enabled_default=False,
@@ -2002,6 +2026,8 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         key='sync_rtc_result',
         component='rtc_sync',
         name='Update System Time Operation Result',
+        device_class=SensorDeviceClass.ENUM,
+        options=['Successful', 'Operation In Progress', 'Enabled Discharging', 'Disabled', 'Operation Failed Controller Refused To Respond', 'Operation Failed No Response From The Controller', 'Operation Failed Current Function Disabled', 'Operation Failed Parameter Access Failed', 'Operation Failed Input Parameters Incorrect'],
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
 )
