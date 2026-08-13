@@ -142,9 +142,11 @@ an upstream API that doesn't exist):
 3. Settings → Devices & Services → Add Integration → "Sofar Inverter Modbus" → enter the
    inverter's IP and Modbus TCP port (usually 502).
 
-It can run **side by side** with `homeassistant-solax-modbus` — the entity IDs don't
-collide — which is the recommended way to verify it against your existing setup before
-removing the old integration.
+**It cannot run side by side with `homeassistant-solax-modbus` on the same Home Assistant
+instance** — see the `tmodbus` version-pin conflict above. Verify it on a separate instance
+first (a HACS install can point at the same inverter over the network without touching your
+existing `solax_modbus` setup at all), and only install it on your main instance once you're
+ready to remove `solax_modbus` there.
 
 ## Development
 
