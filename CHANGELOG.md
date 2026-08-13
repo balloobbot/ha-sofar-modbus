@@ -9,6 +9,53 @@ and GitHub Release.
 
 ## [Unreleased]
 
+## [0.1.9] - 2026-08-13
+
+### Added
+
+- Config entry diagnostics (`diagnostics.py`): downloads the raw register map — every
+  register the currently-served components hold, keyed by Modbus space and address —
+  plus model, serial number, inverter type bitmask, and which components are served.
+  Reads fresh per component rather than reusing `coordinator.data`, so the dump reflects
+  live register state at download time; a component's own read failure during the
+  download is recorded in `read_errors` rather than failing the whole download, matching
+  how every other resilience piece in this project treats this specific flaky gateway.
+  `SofarInverter` itself has no `async_read_raw()` since it stopped wrapping a
+  `ComponentGroup` (0.1.7) — this reads each served component individually and merges
+  the raw maps itself, the same per-component iteration `coordinator.py` already does.
+  Follows `modbus-connection`'s own [integration
+  guide](https://home-assistant-libs.github.io/modbus-connection/home-assistant/integration/#diagnostics).
+
+### Verified against the reference implementation, not just the docs
+
+- Prompted by wanting this repo to be usable as a reference itself: re-checked
+  `modbus-connection`'s HA integration checklist end to end, plus fetched the official
+  `developers.home-assistant.io` Modbus guide and cloned the reference implementation it
+  points to (`trovis-modbus-hass`) for a real comparison, not just the docs' own
+  illustrative examples.
+  - **Corrected a prior claim**: entity value access here uses string-keyed
+    `component`/`key` dispatch (`SofarSensorDescription`), not the docs' type-checked
+    `value_fn` lambda example. Checking the reference implementation shows this isn't a
+    deviation — its `TrovisSensorDescription` uses the identical `component: str` +
+    `field: str` pattern, for the same reason (a large, effectively-generated attribute
+    surface, not a small hand-written one). Nothing changed here; the earlier assessment
+    was wrong.
+  - The reference implementation also has no diagnostics download — this feature isn't
+    "catching up," it's ahead of the one repo `modbus-connection`'s own docs hold up as
+    the example.
+  - Noted, not changed: the reference uses `entry.runtime_data = coordinator` (the
+    current HA config-entry-runtime-data idiom) where this project still uses
+    `hass.data.setdefault(DOMAIN, {})[entry.entry_id]` throughout `__init__.py`/
+    `sensor.py`. Real difference, touches three files, and is a style migration
+    unrelated to what prompted this release — left for its own decision later.
+
+### Verification
+
+- New `tests/lib/test_diagnostics.py`: the payload includes every served component's
+  registers keyed by space/address; a component that fails mid-download is recorded in
+  `read_errors` and excluded from `registers`, without affecting any other component's
+  data in the same payload.
+
 ## [0.1.8] - 2026-08-13
 
 ### Added
