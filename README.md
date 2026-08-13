@@ -17,9 +17,9 @@ copied into [`LICENSE`](LICENSE) alongside this project's own.
 
 ## Status
 
-**Early / read-only.** Sensors work and have been verified live against one PV-only inverter
-(`SS2E...`, 4.4 KTLX-G3, `PV | X3 | GEN`) — 88 entities, correct scaling, stable polling under
-a 48-register block cap the hardware needs.
+**Read-only sensors are live.** Verified live against one PV-only inverter (`SS2E...`,
+4.4 KTLX-G3, `PV | X3 | GEN`) — 88 entities, correct scaling, stable polling under a
+48-register block cap the hardware needs.
 
 The live gateway is intermittently slow on some blocks — a real, observed condition, not a
 bug — and the integration now absorbs that instead of surfacing it: a component whose read
@@ -27,23 +27,40 @@ fails gets one retry before it's ever recorded as failed, and only the entities 
 component that's still failing after that go `unavailable` — not the other 87. See
 [Resilience](#resilience) below.
 
-**Writable entities (numbers, selects, buttons) are not built yet — paused deliberately.**
-The `sofar-modbus` library already exposes `writable=True` fields and `async_write_*`
-convenience methods for most of the settings registers (feed-in limit, EPS control,
-passive-mode setpoints, RTC, IV-curve-scan), but **no write UI is exposed** — nothing can
-be triggered from Home Assistant yet. Writes are being held back until:
+**Write entities exist (`select`/`number`/`switch`/`button`) but haven't been pressed against
+real hardware yet** — this integration still isn't installed on the live instance (see the
+`tmodbus` pin conflict below), so every write path here has only run against the mock
+backend. What's built:
 
-1. **Whether this inverter's Modbus interface accepts writes at all is unconfirmed.** Writes
-   never worked via `homeassistant-solax-modbus` on this hardware either, and that may be
-   this inverter specifically (remote-write not enabled in its own menu, or similar) rather
-   than anything integration-side.
-2. **A firmware update with Modbus/SunSpec fixes may be relevant** and hasn't been installed
-   yet — worth doing before spending time debugging writes against firmware that's already
-   known to need an update. This is the current blocker.
-3. `pv_power_total`'s scale factor (0.1 vs 0.01) needs a daylight check against real PV
-   output before treating any of the current numeric decoding as fully trusted — see the
-   2024 upstream issue [wills106/homeassistant-solax-modbus#784](https://github.com/wills106/homeassistant-solax-modbus/issues/784),
-   opened by this repo's author, still unresolved there.
+- **Remote Switch On Off** (`select`) — a plain single-register write, applied immediately.
+- **FeedIn: Limitation Mode** (`select`) + **FeedIn: Maximum Power** (`number`) +
+  **FeedIn: Update** (`button`) — the device only accepts mode and power as one combined
+  write, so the select/number stage a value locally and the button commits both together.
+- **Active Power Control** (`switch`) + **Active Power Control: Export Limit** (`number`) +
+  **Active Power Control: Update** (`button`) — same staged-then-commit shape, for
+  `sofar-modbus`'s newest write path (register `0x1105`/`0x1106`).
+
+This mirrors the exact UX `homeassistant-solax-modbus`'s own `plugin_sofar.py` uses for the
+same two register pairs (`WRITE_DATA_LOCAL` + a paired update button), not a new design.
+
+The three things that used to be open questions before starting this are resolved:
+
+1. **This inverter does accept Modbus writes.** The production `homeassistant-solax-modbus`
+   install on this same hardware runs a weekly `button.sofar_sync_rtc` press (a genuine
+   7-register block write) with a clean history and a 100% communication success rate. A
+   SOFAR 4.4KTLX-G3 owner — this exact model — also confirmed `0x1105`/`0x1106` (Active Power
+   Control) working live: real inverter output visibly dropped from 3.4kW to 0.8kW at a 30%
+   limit ([wills106/homeassistant-solax-modbus#2107](https://github.com/wills106/homeassistant-solax-modbus/issues/2107)).
+   SofarSolar's own Modbus User Guide documents no unlock code, protocol toggle, or "remote
+   control enable" register for this inverter family — write access is available as soon as
+   RS485 address/baud are set, which they already are.
+2. ~~A firmware update with Modbus/SunSpec fixes may be relevant~~ — nothing found tying write
+   capability to firmware version for the G3 family; only the PV-scale bug below was
+   version-dependent, and that's understood regardless of version now.
+3. `pv_power_total`'s scale factor is resolved upstream:
+   [wills106/homeassistant-solax-modbus#2032](https://github.com/wills106/homeassistant-solax-modbus/pull/2032)
+   confirms "Sofar KTLX-G3 uses same scaling as Hybrid inverters" (`0.1`, not `0.01`) —
+   `sofar-modbus`'s `pv_power_total` already uses `0.1`, so no code change was needed here.
 
 HYBRID-only features — battery-pack telemetry, passive mode, EPS, TOU — are generated from
 the same register map but **have not been tested against real hardware** and won't be until
@@ -156,9 +173,10 @@ Dependencies are [PEP 735](https://peps.python.org/pep-0735/) groups, not
 ```bash
 uv venv && source .venv/bin/activate
 uv pip install -e . --group test --group dev
-python3 tests/lib/test_smoke.py         # probe -> device -> entity-filter, mock backend
-python3 tests/lib/test_coordinator.py   # retry, tiered cadence, disconnect recovery
-python3 tests/lib/test_diagnostics.py   # diagnostics payload, mock backend
+python3 tests/lib/test_smoke.py          # probe -> device -> entity-filter, mock backend
+python3 tests/lib/test_coordinator.py    # retry, tiered cadence, disconnect recovery
+python3 tests/lib/test_diagnostics.py    # diagnostics payload, mock backend
+python3 tests/lib/test_write_entities.py # stage/commit writes, mock backend
 ruff check .
 mypy custom_components/sofar_modbus
 ```
@@ -179,9 +197,10 @@ from Home Assistant); a `PATCH` bump means a fix with no new capability. Every v
   of `solax_modbus`'s engine this doesn't attempt, stays out of scope (see that section for
   why).
 - **`entry.runtime_data` idiom migration — done (`0.1.10`).**
-- **Phase 2 — next, on hold.** Number/select/button write entities. `sofar-modbus` already
-  has the writable fields and `async_write_*` helpers; blocked on the inverter-side firmware
-  update noted in [Status](#status), not on anything integration-side.
+- **Phase 2 — done.** `select`/`number`/`switch`/`button` write entities for Remote Switch,
+  FeedIn Limitation, and Active Power Control — see [Status](#status). Not yet pressed
+  against real hardware; that's a separate, explicit next step once this integration is
+  actually installed somewhere live.
 - **Phase 4 — not started.** HYBRID hardware verification (no HYBRID Sofar inverter
   available to test against).
 - **Phase 5 — not started.** Energy dashboard device.

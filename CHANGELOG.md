@@ -9,6 +9,41 @@ and GitHub Release.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-13
+
+### Added
+
+- Phase 2: `select`/`number`/`switch`/`button` write entities.
+  - **Remote Switch On Off** (`select`) writes immediately — a plain single-register field.
+  - **FeedIn: Limitation Mode** (`select`) + **FeedIn: Maximum Power** (`number`) +
+    **FeedIn: Update** (`button`), and **Active Power Control** (`switch`) +
+    **Active Power Control: Export Limit** (`number`) + **Active Power Control: Update**
+    (`button`) — both pairs stage locally (`SofarDataUpdateCoordinator.pending`) and only
+    write on the paired button press, since the device only accepts each pair as one
+    combined block. Mirrors `homeassistant-solax-modbus`'s own `WRITE_DATA_LOCAL` +
+    update-button shape for the same two register pairs.
+  - `SofarEntity` gained a `component` parameter and now owns `available` directly (was
+    duplicated per-platform in `sensor.py`; four platforms made that worth sharing).
+  - Bumps the `sofar-modbus` dependency pin to `v0.1.3` — needed for its new
+    `ActivePowerControl` component (`0x1105`/`0x1106`); see that project's own history for
+    the register-level detail.
+
+### Changed
+
+- README: the writes status section no longer lists open questions — this session confirmed
+  writes work on the reference hardware (live `solax_modbus` RTC-sync writes, and a
+  community-confirmed `0x1105`/`0x1106` write on the same 4.4 KTLX-G3 model) and that
+  `pv_power_total`'s scale factor was already correct, so both of the old blockers are gone.
+
+### Verification
+
+- `python3 tests/lib/test_write_entities.py` — staging vs. immediate write, paired-commit
+  writes exactly one combined block, pending cleared after commit, a `ModbusError`/`ValueError`
+  from a write surfaces as `HomeAssistantError` rather than a raw exception. Not yet run
+  against real hardware — this integration isn't installed on the live instance yet.
+- `test_smoke.py`/`test_coordinator.py`/`test_diagnostics.py` unaffected. `ruff`/`mypy` clean
+  (same 4 pre-existing unrelated errors as baseline).
+
 ## [0.1.11] - 2026-08-13
 
 ### Changed

@@ -24,12 +24,19 @@ that's up but unresponsive (a wedged serial-to-network bridge), and stores
 the report as coordinator.data so entities can tell which of them, if any,
 went stale.
 https://home-assistant-libs.github.io/modbus-connection/home-assistant/integration/
+
+``pending`` backs the number/select/switch write entities whose registers the
+device only accepts as one combined block (FeedIn limitation, active power
+control): those entities stage a value here instead of writing it, and a
+paired button entity performs the actual write and clears the keys it just
+committed. See pending_or_live().
 """
 
 from __future__ import annotations
 
 import logging
 from datetime import timedelta
+from typing import Any
 
 from homeassistant.components.sensor import SensorStateClass
 from homeassistant.config_entries import ConfigEntry
@@ -95,6 +102,18 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
         self._cycle = 0
         self._fast: dict[str, SofarComponentBase] | None = None
         self._slow: dict[str, SofarComponentBase] | None = None
+        self.pending: dict[str, Any] = {}
+
+    def pending_or_live(self, key: str, live_value: Any) -> Any:
+        """What a staged number/select/switch entity should show right now.
+
+        The value the user last set this session, if any and if it hasn't
+        been committed yet — otherwise whatever the last successful poll
+        read. In-memory only: these registers are volatile on the device
+        itself (no flash wear from writing them often), so there's nothing
+        to persist across a restart either.
+        """
+        return self.pending.get(key, live_value)
 
     async def _async_update_data(self) -> UpdateReport:
         try:
@@ -166,8 +185,7 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
         for name, cause in report.failed.items():
             self._consecutive_failures[name] = self._consecutive_failures.get(name, 0) + 1
             _LOGGER.debug(
-                "%s: %s did not refresh this poll even after a retry, keeping its previous "
-                "values (%d consecutive failures): %s",
+                "%s: %s did not refresh this poll even after a retry, keeping its previous values (%d consecutive failures): %s",
                 self.name,
                 name,
                 self._consecutive_failures[name],

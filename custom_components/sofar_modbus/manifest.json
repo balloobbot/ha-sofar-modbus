@@ -9,7 +9,7 @@
     "issue_tracker": "https://github.com/darkrain-nl/ha-sofar-modbus/issues",
     "requirements": [
         "modbus-connection[tmodbus]>=4.6.1,<5.0.0",
-        "sofar-modbus @ git+https://github.com/darkrain-nl/sofar-modbus.git@v0.1.2"
+        "sofar-modbus @ git+https://github.com/darkrain-nl/sofar-modbus.git@v0.1.3"
     ],
-    "version": "0.1.11"
+    "version": "0.2.0"
 }
