@@ -15,7 +15,6 @@ from modbus_connection import ModbusTimeoutError  # noqa: E402
 from modbus_connection.mock import MockModbusConnection, MockModbusUnit  # noqa: E402
 from sofar_modbus.modern.device import SofarInverter  # noqa: E402
 
-from custom_components.sofar_modbus.const import DOMAIN  # noqa: E402
 from custom_components.sofar_modbus.coordinator import SofarDataUpdateCoordinator  # noqa: E402
 from custom_components.sofar_modbus.diagnostics import async_get_config_entry_diagnostics  # noqa: E402
 
@@ -26,12 +25,8 @@ class _FakeConnection:
 
 
 class _FakeEntry:
-    entry_id = "test-entry"
-
-
-class _FakeHass:
     def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
-        self.data = {DOMAIN: {_FakeEntry.entry_id: coordinator}}
+        self.runtime_data = coordinator
 
 
 def _seed_serial(unit: MockModbusUnit, serial: str) -> None:
@@ -65,9 +60,8 @@ async def test_diagnostics_dumps_raw_registers_for_every_served_component() -> N
     device = SofarInverter(unit)
     coordinator = _coordinator(device)
     coordinator.data = await coordinator._async_update_data()
-    hass = _FakeHass(coordinator)
 
-    diagnostics = await async_get_config_entry_diagnostics(hass, _FakeEntry())  # type: ignore[arg-type]
+    diagnostics = await async_get_config_entry_diagnostics(None, _FakeEntry(coordinator))  # type: ignore[arg-type]
 
     assert diagnostics["model"] == device.model
     assert diagnostics["serial_number"] == device.serial_number
@@ -90,10 +84,9 @@ async def test_a_failed_component_is_reported_not_fatal() -> None:
     device = SofarInverter(unit)
     coordinator = _coordinator(device)
     coordinator.data = await coordinator._async_update_data()
-    hass = _FakeHass(coordinator)
 
     unit.fail_read(0x0484, ModbusTimeoutError("stuck"))
-    diagnostics = await async_get_config_entry_diagnostics(hass, _FakeEntry())  # type: ignore[arg-type]
+    diagnostics = await async_get_config_entry_diagnostics(None, _FakeEntry(coordinator))  # type: ignore[arg-type]
 
     assert "grid" in diagnostics["read_errors"]
     assert 0x0484 not in diagnostics["registers"].get("holding", {})

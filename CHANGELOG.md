@@ -9,6 +9,31 @@ and GitHub Release.
 
 ## [Unreleased]
 
+## [0.1.10] - 2026-08-13
+
+### Changed
+
+- Migrated from `hass.data.setdefault(DOMAIN, {})[entry.entry_id]` to `entry.runtime_data`
+  for storing the coordinator — the current HA config-entry-runtime-data idiom, matching
+  `trovis-modbus-hass` (the reference implementation `modbus-connection`'s own docs point
+  to). A new `SofarConfigEntry = ConfigEntry[SofarDataUpdateCoordinator]` type alias
+  (`coordinator.py`) is threaded through `__init__.py`, `sensor.py`, and `diagnostics.py`
+  in place of a bare `ConfigEntry`. `async_unload_entry` drops its `hass.data[DOMAIN].pop(...)`
+  cleanup entirely — `runtime_data` is a plain attribute on the entry object, not a
+  separate registry that needs clearing (confirmed against the reference's own
+  `async_unload_entry`, which does nothing beyond `async_unload_platforms`).
+- `entity.py` and `config_flow.py` untouched — neither reads the coordinator back via
+  `hass.data`/`runtime_data`. The pre-existing mypy error on `entity.py`'s
+  `coordinator.config_entry.title` access is unrelated to this (it's how HA core types
+  `DataUpdateCoordinator.config_entry` as `Optional` regardless of which `ConfigEntry`
+  subtype parameterizes it) and is unchanged by this migration.
+
+### Verification
+
+- `tests/lib/test_diagnostics.py`'s fakes updated to carry `runtime_data` directly
+  instead of simulating a `hass.data` lookup. `ruff`/`mypy` clean (same 4 pre-existing
+  unrelated errors as baseline, none new). All three `tests/lib/` scripts pass unchanged.
+
 ## [0.1.9] - 2026-08-13
 
 ### Added

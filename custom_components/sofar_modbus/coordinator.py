@@ -48,6 +48,8 @@ _LOGGER = logging.getLogger(__name__)
 _TIMEOUT_DISCONNECT_THRESHOLD = 3
 _SLOW_TIER_EVERY_N_CYCLES = 4  # ~60s at the 15s base scan interval
 
+type SofarConfigEntry = ConfigEntry[SofarDataUpdateCoordinator]
+
 
 def _slow_tier_components() -> frozenset[str]:
     """Component names with no 'measurement' row — settings, counters, identity.
@@ -69,7 +71,7 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
     def __init__(
         self,
         hass: HomeAssistant,
-        entry: ConfigEntry,
+        entry: SofarConfigEntry,
         connection: ModbusConnection,
         device: SofarInverter,
         scan_interval: int,

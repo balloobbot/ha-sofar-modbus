@@ -16,18 +16,16 @@ actually failed this poll go unavailable — not all of them.
 from __future__ import annotations
 
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
-from .coordinator import SofarDataUpdateCoordinator
+from .coordinator import SofarConfigEntry, SofarDataUpdateCoordinator
 from .entity import SofarEntity
 from .generated_sensors import SENSOR_DESCRIPTIONS, SofarSensorDescription
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
-    coordinator: SofarDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
+async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
+    coordinator = entry.runtime_data
     report = coordinator.data
     served = report.updated | set(report.failed)
 

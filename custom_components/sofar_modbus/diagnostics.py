@@ -13,16 +13,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from modbus_connection import ModbusError
 
-from .const import DOMAIN
-from .coordinator import SofarDataUpdateCoordinator
+from .coordinator import SofarConfigEntry
 
 
-async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: ConfigEntry) -> dict[str, Any]:
-    coordinator: SofarDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
+async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: SofarConfigEntry) -> dict[str, Any]:
+    coordinator = entry.runtime_data
     device = coordinator.device
     report = coordinator.data
     served = (report.updated | set(report.failed)) if report else set()
