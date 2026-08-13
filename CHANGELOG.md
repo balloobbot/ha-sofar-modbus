@@ -9,6 +9,36 @@ and GitHub Release.
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-08-13
+
+### Fixed
+
+- One slow or refused Modbus block (seen live: `GridOutput` at 0x484 timing out against the real
+  inverter's gateway) no longer blanks every sensor. Bumped `sofar-modbus` to `v0.1.2`
+  ([darkrain-nl/sofar-modbus@695499f](https://github.com/darkrain-nl/sofar-modbus/commit/695499f),
+  three commits: `1ce1a3b`, `075016d`, `695499f`), which stopped pooling the poll into one
+  `ComponentGroup` and reads each component independently instead — a component whose read fails
+  keeps its previous values and is named in the returned `UpdateReport` (`updated: set[str]`,
+  `failed: dict[str, ModbusError]`, keyed by the same attribute names `generated_sensors.py`
+  already uses), while every other component still refreshes and notifies.
+- `coordinator.py` now only raises `UpdateFailed` for `ModbusConnectionError` (a dead link) — a
+  non-empty `UpdateReport.failed` is logged, not treated as a failed poll, and `coordinator.data`
+  holds the report itself (the coordinator is now `DataUpdateCoordinator[UpdateReport]`, not
+  `[None]`). The disconnect-after-repeated-timeouts recovery still applies, now triggered by a
+  `ModbusTimeoutError` appearing in `report.failed` rather than a caught exception.
+- `sensor.py`'s `SofarSensor` gained a per-entity `available` override: only the entities on a
+  component that actually failed *this* poll go unavailable, checked against
+  `coordinator.data.failed` — not the coordinator-wide default every other entity used to share.
+- `SofarInverter.polled_components` no longer exists upstream (removed in the same three-commit
+  series — there's no public "what will this device poll" surface anymore, only "what did the
+  last poll attempt"). `sensor.py`'s entity-creation filter and `tests/lib/test_smoke.py` now
+  derive the served set from `coordinator.data.updated | set(coordinator.data.failed)` instead —
+  every component a poll attempts lands in exactly one of the two, so their union reconstructs the
+  same set `polled_components` used to give, without needing the library to expose it separately.
+  The smoke test's register-seeding also changed: with no pre-poll "what's served" answer
+  available, it now seeds every component's fields unconditionally (an unpolled component's
+  registers are simply never read, so over-seeding is harmless) rather than filtering first.
+
 ## [0.1.6] - 2026-08-13
 
 ### Changed

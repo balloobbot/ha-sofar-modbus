@@ -1,9 +1,16 @@
 """Sensor platform — one SensorEntity per row in generated_sensors.SENSOR_DESCRIPTIONS.
 
-Only rows this inverter type actually serves get an entity: sofar_modbus cuts
-each component along mask boundaries (a component is either wholly served by
-an inverter or not read at all), so "does device.polled_components include
-this row's component" is the whole check — no per-field filtering needed.
+Only rows this inverter type actually serves get an entity. sofar_modbus has no
+public "what will this device poll" surface (it settles that privately in
+async_setup()) — only what one poll actually attempted, via UpdateReport. Since
+every attempted component lands in exactly one of `updated` or `failed`, their
+union is the served set, and the coordinator's first refresh (already run by
+the time this platform is set up — see __init__.py) gives us one for free.
+
+Each entity is also available independently of the others: sofar_modbus reads
+components one at a time and contains a failed one in the poll's UpdateReport
+rather than failing the whole update, so only the entities on a component that
+actually failed this poll go unavailable — not all of them.
 """
 
 from __future__ import annotations
@@ -21,15 +28,14 @@ from .generated_sensors import SENSOR_DESCRIPTIONS, SofarSensorDescription
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     coordinator: SofarDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
-    device = coordinator.device
+    report = coordinator.data
+    served = report.updated | set(report.failed)
 
-    entities: list[SofarSensor] = []
-    for description in SENSOR_DESCRIPTIONS:
-        component = getattr(device, description.component)
-        if component not in device.polled_components:
-            continue  # not served by this inverter type
-        entities.append(SofarSensor(coordinator, description))
-
+    entities = [
+        SofarSensor(coordinator, description)
+        for description in SENSOR_DESCRIPTIONS
+        if description.component in served  # not served by this inverter type otherwise
+    ]
     async_add_entities(entities)
 
 
@@ -41,6 +47,13 @@ class SofarSensor(SofarEntity, SensorEntity):
     def __init__(self, coordinator: SofarDataUpdateCoordinator, description: SofarSensorDescription) -> None:
         super().__init__(coordinator, description.key)
         self.entity_description = description
+
+    @property
+    def available(self) -> bool:
+        if not super().available:
+            return False  # the link is down; nothing refreshed at all
+        report = self.coordinator.data
+        return report is None or self.entity_description.component not in report.failed
 
     @property
     def native_value(self) -> object:

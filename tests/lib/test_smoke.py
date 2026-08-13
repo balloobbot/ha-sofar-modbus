@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "custom_components"
 
 from generated_sensors import SENSOR_DESCRIPTIONS  # noqa: E402
 from modbus_connection.mock import MockModbusConnection  # noqa: E402
+from sofar_modbus.model import SofarComponentBase  # noqa: E402
 from sofar_modbus.modern.device import SofarInverter  # noqa: E402
 
 
@@ -57,24 +58,30 @@ async def _run(serial: str, label: str) -> int:
     await device.async_setup()
     print(f"[{label}] serial={device.serial_number} model={device.model} type={device.inverter_type!r}")
 
+    # No public "what will be polled" surface — seed every component's
+    # fields regardless of whether this inverter type actually serves it;
+    # an unpolled component's registers are simply never read.
     all_regs = dict(seeded)
-    for comp in device.polled_components:
+    for comp in vars(device).values():
+        if not isinstance(comp, SofarComponentBase):
+            continue
         for _name, field in type(comp).declared_fields.items():
             addr = getattr(field, "address", None)
             if addr is not None:
                 all_regs.setdefault(addr, 1)
     unit.load_raw({"holding": all_regs})
 
-    await device.async_update()
+    report = await device.async_update()
+    assert report.complete, f"unexpected failures against the mock backend: {report.failed}"
+    served = report.updated | set(report.failed)  # every component this poll attempted
 
-    polled = set(device.polled_components)
     built = 0
     skipped = 0
     for description in SENSOR_DESCRIPTIONS:
-        component = getattr(device, description.component)
-        if component not in polled:
+        if description.component not in served:
             skipped += 1
             continue
+        component = getattr(device, description.component)
         getattr(component, description.key)  # must not raise
         built += 1
     print(f"[{label}] {built} entities built, {skipped} skipped (unserved by this inverter type)")
