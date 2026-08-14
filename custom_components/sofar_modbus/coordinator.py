@@ -183,14 +183,15 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
             self._consecutive_timeouts = 0
 
         for name, cause in report.failed.items():
-            self._consecutive_failures[name] = self._consecutive_failures.get(name, 0) + 1
-            _LOGGER.debug(
-                "%s: %s did not refresh this poll even after a retry, keeping its previous values (%d consecutive failures): %s",
-                self.name,
-                name,
-                self._consecutive_failures[name],
-                cause,
-            )
+            prev = self._consecutive_failures.get(name, 0)
+            self._consecutive_failures[name] = prev + 1
+            if prev == 0:
+                _LOGGER.warning(
+                    "%s: %s failed to refresh and is keeping its previous values: %s",
+                    self.name,
+                    name,
+                    cause,
+                )
         for name in report.updated:
             self._consecutive_failures.pop(name, None)
 
