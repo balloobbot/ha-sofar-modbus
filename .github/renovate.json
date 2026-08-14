@@ -56,6 +56,20 @@
         "modbus-connection"
       ],
       "groupName": "Core Protocol Dependencies"
+    },
+    {
+      "matchPackageNames": [
+        "pycares"
+      ],
+      "allowedVersions": "<5.0.0",
+      "description": "pycares>=5.0.0 is incompatible with aiodns and Home Assistant"
+    },
+    {
+      "matchPackageNames": [
+        "pytest-asyncio"
+      ],
+      "allowedVersions": "<1.0.0",
+      "description": "pytest-homeassistant-custom-component requires pytest-asyncio < 1.0.0"
     }
   ]
 }
