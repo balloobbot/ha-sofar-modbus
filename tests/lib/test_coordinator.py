@@ -21,7 +21,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from homeassistant.helpers.update_coordinator import UpdateFailed  # noqa: E402
-from modbus_connection import ModbusConnectionError, ModbusTimeoutError  # noqa: E402
+from modbus_connection import IllegalDataAddressError, ModbusConnectionError, ModbusTimeoutError  # noqa: E402
 from modbus_connection.mock import MockModbusConnection, MockModbusUnit  # noqa: E402
 from sofar_modbus.modern.device import SofarInverter  # noqa: E402
 
@@ -162,13 +162,36 @@ async def test_all_timeout_outage_raises_update_failed_and_skips_retry() -> None
     await coordinator._async_update_data()
 
     unit.fail_requests(ModbusTimeoutError("stuck"))
+    unit.read_events.clear()
     try:
         await coordinator._async_update_data()
     except UpdateFailed as err:
-        assert "no component answered" in str(err)
+        assert "stuck" in str(err)
     else:
         raise AssertionError("expected UpdateFailed when all components time out")
+
+    # Fast-fail: the poll gives up on the first component timeout rather than
+    # walking through the remaining components paying a timeout for each.
+    assert len(unit.read_events) == 1
     print("all-timeout-outage-raises-update-failed: PASSED")
+
+
+async def test_refusal_on_first_component_is_contained() -> None:
+    unit = MockModbusConnection().for_unit(1)
+    device = _device(unit)
+    coordinator = _coordinator(device, _FakeConnection())
+    await coordinator._async_update_data()
+
+    # If first component fails with an exception response (e.g. IllegalDataAddressError),
+    # proving the device is awake, subsequent component reads proceed and are contained.
+    assert coordinator._fast is not None
+    first_component_name, first_component = next(iter(coordinator._fast.items()))
+    first_field = next(f for f in type(first_component).declared_fields.values() if getattr(f, "address", None) is not None)
+    unit.fail_read(first_field.address, IllegalDataAddressError())
+    report = await coordinator._poll(coordinator._fast)
+    assert first_component_name in report.failed
+    assert len(report.updated) > 0
+    print("refusal-on-first-component-is-contained: PASSED")
 
 
 async def test_force_slow_tier_polls_slow_tier_on_off_cycles() -> None:
@@ -197,6 +220,7 @@ async def main() -> None:
     await test_force_slow_tier_polls_slow_tier_on_off_cycles()
     await test_a_dead_link_raises_update_failed()
     await test_all_timeout_outage_raises_update_failed_and_skips_retry()
+    await test_refusal_on_first_component_is_contained()
     print("ALL COORDINATOR TESTS PASSED")
 
 

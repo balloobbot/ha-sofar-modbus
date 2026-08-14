@@ -179,14 +179,18 @@ async def _check_total_increasing_holds_available_through_failed_poll() -> None:
     grid_description = next(d for d in SENSOR_DESCRIPTIONS if d.key == "grid_frequency")
 
     def _coordinator(current_report: object) -> object:
-        return SimpleNamespace(device=device, config_entry=SimpleNamespace(title="Test Sofar"), data=current_report, last_update_success=True)
+        return SimpleNamespace(
+            device=device, config_entry=SimpleNamespace(title="Test Sofar"), data=current_report, last_update_success=True
+        )
 
     energy_entity = SofarTotalSensor(_coordinator(report), energy_description)  # type: ignore[arg-type]
     grid_entity = SofarSensor(_coordinator(report), grid_description)  # type: ignore[arg-type]
     assert energy_entity.available and grid_entity.available, "both should be available after a clean poll"
     held_value = energy_entity.native_value
 
-    unit.fail_read(0x0684, ModbusTimeoutError("simulated overnight dropout"))  # solar_generation_today's block, same 'energy' component
+    unit.fail_read(
+        0x0684, ModbusTimeoutError("simulated overnight dropout")
+    )  # solar_generation_today's block, same 'energy' component
     energy_failed_report = await device.async_update()
     assert "energy" in energy_failed_report.failed, f"expected energy to fail this poll: {energy_failed_report.updated}"
     unit.fail_read(0x0684, None)  # clear it before the next poll
@@ -203,13 +207,17 @@ async def _check_total_increasing_holds_available_through_failed_poll() -> None:
     assert not grid_entity.available, "a plain measurement sensor must still go unavailable on its own component's failed poll"
 
     dead_link_entity = SofarTotalSensor(
-        SimpleNamespace(device=device, config_entry=SimpleNamespace(title="Test Sofar"), data=energy_failed_report, last_update_success=False),
+        SimpleNamespace(
+            device=device, config_entry=SimpleNamespace(title="Test Sofar"), data=energy_failed_report, last_update_success=False
+        ),
         energy_description,
     )  # type: ignore[arg-type]
     assert dead_link_entity.available, "total_increasing must hold available even when the link is down"
 
     dead_link_grid_entity = SofarSensor(
-        SimpleNamespace(device=device, config_entry=SimpleNamespace(title="Test Sofar"), data=energy_failed_report, last_update_success=False),
+        SimpleNamespace(
+            device=device, config_entry=SimpleNamespace(title="Test Sofar"), data=energy_failed_report, last_update_success=False
+        ),
         grid_description,
     )  # type: ignore[arg-type]
     assert not dead_link_grid_entity.available, "a measurement sensor must go unavailable when the link is down"
@@ -225,7 +233,7 @@ async def _check_total_sensor_restores_state_and_seeds_high_water() -> None:
     coordinator = SimpleNamespace(
         device=device,
         config_entry=SimpleNamespace(title="Test Sofar"),
-        async_add_listener=lambda *args, **kwargs: (lambda: None),
+        async_add_listener=lambda *args, **kwargs: lambda: None,
     )
     description = next(d for d in SENSOR_DESCRIPTIONS if d.key == "load_consumption_total")
     entity = SofarTotalSensor(coordinator, description)  # type: ignore[arg-type]
@@ -246,7 +254,9 @@ async def _check_total_sensor_restores_state_and_seeds_high_water() -> None:
 
     _set_load_consumption_total_restored(1234.4)
     await device.async_update()
-    assert entity.native_value == 1234.5, f"torn read on first poll after restart must be held against restored high water, got {entity.native_value!r}"
+    assert entity.native_value == 1234.5, (
+        f"torn read on first poll after restart must be held against restored high water, got {entity.native_value!r}"
+    )
     print("total-sensor-restores-state-and-seeds-high-water: PASSED")
 
 
