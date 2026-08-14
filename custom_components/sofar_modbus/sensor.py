@@ -94,14 +94,13 @@ class SofarSensor(SofarEntity, SensorEntity):
 
     @property
     def available(self) -> bool:
-        # A total_increasing counter holds its last known value through a
-        # per-component read failure the same way _smoothed_total_increasing
-        # holds it through a small dip: nothing meaningful is lost by staying
-        # flat overnight, and native_value already returns the component's
-        # last successfully read value regardless of this poll's outcome. A
-        # dead link still overrides this via _link_available.
-        if self.entity_description.state_class is SensorStateClass.TOTAL_INCREASING:
-            return self._link_available
+        # Total and total_increasing counters hold available unconditionally
+        # (even across link drops or offline nights) so long-term statistics
+        # and the energy dashboard stay unbroken. Plain measurement and
+        # state sensors go unavailable when their component fails or the
+        # link drops.
+        if self.entity_description.state_class in (SensorStateClass.TOTAL, SensorStateClass.TOTAL_INCREASING):
+            return True
         return super().available
 
     @property

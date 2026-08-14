@@ -218,7 +218,13 @@ async def _check_total_increasing_holds_available_through_failed_poll() -> None:
         SimpleNamespace(device=device, config_entry=SimpleNamespace(title="Test Sofar"), data=energy_failed_report, last_update_success=False),
         energy_description,
     )  # type: ignore[arg-type]
-    assert not dead_link_entity.available, "a genuinely dead link must still override the total_increasing hold"
+    assert dead_link_entity.available, "total_increasing must hold available even when the link is down"
+
+    dead_link_grid_entity = SofarSensor(
+        SimpleNamespace(device=device, config_entry=SimpleNamespace(title="Test Sofar"), data=energy_failed_report, last_update_success=False),
+        grid_description,
+    )  # type: ignore[arg-type]
+    assert not dead_link_grid_entity.available, "a measurement sensor must go unavailable when the link is down"
     print("total-increasing-holds-available-through-failed-poll: PASSED")
 
 
