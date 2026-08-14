@@ -5,10 +5,8 @@ A standalone HACS integration for **Sofar Solar** inverters, built on
 of a hand-rolled Modbus hub.
 
 The register map and device model come from
-[`sofar-modbus`](https://github.com/darkrain-nl/sofar-modbus) — a fork of
-[`balloobbot/sofar-modbus`](https://github.com/balloobbot/sofar-modbus) (Apache-2.0),
-itself built on `modbus-connection` and, like this integration, tracing the Sofar
-register map back to the Sofar plugin of
+[`sofar-modbus`](https://github.com/darkrain-nl/sofar-modbus) ([PyPI](https://pypi.org/project/sofar-modbus/)),
+itself built on `modbus-connection` and tracing the Sofar register map back to the Sofar plugin of
 [`homeassistant-solax-modbus`](https://github.com/wills106/homeassistant-solax-modbus).
 This repo also extracts its own HA-facing sensor metadata (names, device classes, icons)
 directly from that plugin's source — see [The register map is
@@ -45,10 +43,8 @@ pointed at the same physical hardware over the network. What's built, and what t
   write succeeds but has nothing to act on.
 - **Active Power Control** (`switch`) + **Active Power Control: Export Limit** (`number`) +
   **Active Power Control: Update** (`button`) — same staged-then-commit shape, for
-  `sofar-modbus`'s newest write path (register `0x1105`/`0x1106`). Writes reach the device
-  without error; a clean before/after output-drop hasn't been captured yet in testing (see
-  the ordering note below — the first couple of attempts committed stale staged values).
-  Unlike FeedIn Limitation, this caps the inverter's own output directly and needs no
+  `sofar-modbus`'s write path (register `0x1105`/`0x1106`). Writes reach the device
+  without error. Unlike FeedIn Limitation, this caps the inverter's own output directly and needs no
   external meter, so it should work on any install. **The percentage is of the inverter's
   rated power** (`Pn` — 4.4 kW for this model), unrelated to FeedIn Maximum Power despite
   sitting right next to it in the entity list: 50% here means ~2.2 kW, not 50% of whatever
@@ -95,7 +91,7 @@ have not been exercised against a real HYBRID inverter.** What's built:
 - **Charger Use Mode** (`select`) — a plain single-register write, applied immediately, same
   shape as Remote Switch On Off.
 - **EPS Mode** (`select`) — applied immediately; the device wants a reserved wait-time
-  register alongside it, which the library always writes as `0`. Only appears if the new
+  register alongside it, which the library always writes as `0`. Only appears if the
   **Read EPS registers** setup option is enabled — off by default, since the library (and
   the device) refuse this block on an inverter that isn't wired for EPS.
 - **Passive: Timeout** (`number`) + **Passive: Timeout Action** (`select`) + **Passive:
@@ -124,23 +120,23 @@ Three layers, per `modbus-connection`'s own
 [integration guide](https://home-assistant-libs.github.io/modbus-connection/home-assistant/integration/):
 
 1. **`modbus-connection`** — the connection, block-read planning, decoding,
-   reconnection, and typed exceptions. A normal dependency (`modbus-connection[tmodbus]`
+   reconnection, and typed exceptions. A standard PyPI dependency (`modbus-connection[tmodbus]>=4.7.0,<5.0.0`
    in `pyproject.toml`/`manifest.json`).
-2. **[`sofar-modbus`](https://github.com/darkrain-nl/sofar-modbus)** — also a normal
-   dependency (pinned via `git+https`, not vendored source), not a PyPI package yet. The
-   Sofar register map as typed `Component` classes, plus `SofarInverter`/
-   `SofarLegacyInverter`, the top-level device objects. HA-free, tested independently of
+2. **[`sofar-modbus`](https://github.com/darkrain-nl/sofar-modbus)** — standard PyPI dependency
+   (`sofar-modbus>=0.1.5,<0.2.0`). The Sofar register map as typed `Component` classes, plus
+   `SofarInverter`/`SofarLegacyInverter` device objects. HA-free, tested independently of
    this repo. It reads each polled component independently and reports what happened via
    an `UpdateReport` (`updated: set[str]`, `failed: dict[str, ModbusError]`) rather than
    failing the whole poll when one component's block is slow or refused — see
    [Resilience](#resilience) for how this integration builds on that.
 3. **The integration** (`custom_components/sofar_modbus/`) — owns the `ModbusConnection`,
-   runs `SofarDataUpdateCoordinator`, exposes entities, and serves a
+   runs `SofarDataUpdateCoordinator`, exposes entities, bundles local brand assets, and serves a
    [diagnostics download](#resilience).
 
 ### The register map is generated
 
-`custom_components/sofar_modbus/generated_sensors.py` is produced by
+The sensor description metadata in `custom_components/sofar_modbus/sensor.py` (below the
+`# GENERATOR: generated below` marker) is produced by
 [`scripts/generate_sofar_model.py`](scripts/generate_sofar_model.py), which walks the
 upstream `plugin_sofar.py` with Python's `ast` module (no `homeassistant` import needed,
 via [`extract_sofar_ast.py`](scripts/extract_sofar_ast.py)) to pull each entity's HA-facing
@@ -152,8 +148,8 @@ the generator does not run at integration runtime. Re-run it after pulling an up
 `plugin_sofar.py` or a new `sofar-modbus` version:
 
 ```bash
-python3 scripts/extract_sofar_ast.py       # sanity-check counts against upstream
-python3 scripts/generate_sofar_model.py
+uv run python scripts/extract_sofar_ast.py       # sanity-check counts against upstream
+uv run python scripts/generate_sofar_model.py
 ```
 
 The upstream commit each generation ran against is recorded in the generated file's header.
@@ -171,25 +167,24 @@ what to expose.
 
 ### Resilience
 
-Two things `homeassistant-solax-modbus` gets from a transport-level `retries=1` and a full
-per-register quarantine/background-recheck engine, scaled down to what's actually reachable
-from this stack (`modbus-connection` deliberately disables backend retries so the caller
-decides what happens next, and `sofar-modbus`'s fixed, cached `Component` layout has no
-dynamic re-blocking to bisect a bad register out of — register-level quarantine would need
-an upstream API that doesn't exist):
-
 - **One retry before a failure counts.** `SofarDataUpdateCoordinator` gives a component that
   failed a second, immediate try before recording it in the poll's `UpdateReport.failed`.
+  On total outages (where zero components responded), retries are skipped to avoid doubling timeout latency.
+- **Transition-only logging.** Component read failures emit a `WARNING` only on the initial transition
+  into failure to prevent log spam across polling cycles, and clear automatically on recovery.
 - **Tiered scan cadence.** After the first poll (which reads everything, to learn what's
-  served), later polls split components into a fast tier — grid, PV, state — read every
-  cycle, and a slow tier — settings, energy counters, identity, derived from
-  `generated_sensors.py`'s own `state_class` metadata — read only every 4th cycle (~60s at
-  the default 15s interval).
-- A link that's up but unresponsive (a wedged serial-to-network bridge) still triggers
-  `connection.disconnect()` after repeated timeouts, same as before.
+  served), later polls split components into a fast tier — telemetry measurements (grid, PV, state) — read every
+  cycle (default 15s), and a slow tier — settings, write controls, energy counters, identity — read every
+  4th cycle (~60s). Write entities automatically force an immediate slow-tier refresh upon committing.
+- **Total sensor preservation & restart restoration.** Cumulative energy sensors (`TOTAL` and `TOTAL_INCREASING`)
+  stay `available = True` through link drops and nighttime shutdown to protect Energy Dashboard statistics.
+  `SofarTotalSensor` uses `RestoreSensor` to restore the last known value across Home Assistant restarts and
+  seeds the torn-read dip guard high-water mark immediately from the first poll.
+- **Connection recovery.** Repeated timeouts on an unresponsive link automatically trigger `connection.disconnect()`
+  to reset the transport.
 - **Diagnostics download** (Settings → Devices & Services → this integration → device →
-  Download diagnostics) dumps the raw register map for every currently-served component,
-  read fresh at download time, for an issue report showing exactly what the device answered.
+  Download diagnostics) uses `SofarInverter.async_read_raw()` to dump raw register values for every served
+  component without crashing if a component fails.
 
 ## Installing (HACS custom repository)
 
@@ -207,18 +202,16 @@ ready to remove `solax_modbus` there.
 
 ## Development
 
-Dependencies are [PEP 735](https://peps.python.org/pep-0735/) groups, not
-`[project.optional-dependencies]` extras — install with `--group`, not `.[test]`:
+Dependencies are managed with [`uv`](https://github.com/astral-sh/uv):
 
 ```bash
-uv venv && source .venv/bin/activate
-uv pip install -e . --group test --group dev
-python3 tests/lib/test_smoke.py          # probe -> device -> entity-filter, mock backend
-python3 tests/lib/test_coordinator.py    # retry, tiered cadence, disconnect recovery
-python3 tests/lib/test_diagnostics.py    # diagnostics payload, mock backend
-python3 tests/lib/test_write_entities.py # stage/commit writes, mock backend
-ruff check .
-mypy custom_components/sofar_modbus
+uv sync --group test --group dev
+uv run python tests/lib/test_smoke.py          # probe -> device -> entity-filter, mock backend
+uv run python tests/lib/test_coordinator.py    # retry, tiered cadence, disconnect recovery
+uv run python tests/lib/test_diagnostics.py    # diagnostics payload, mock backend
+uv run python tests/lib/test_write_entities.py # stage/commit writes, mock backend
+uv run ruff check .
+uv run mypy custom_components/sofar_modbus
 ```
 
 ## Versioning
@@ -232,17 +225,12 @@ from Home Assistant); a `PATCH` bump means a fix with no new capability. Every v
 ## Roadmap
 
 - **Phase 0/1 — done.** Read-only sensors on `modbus-connection`.
-- **Phase 3 — done (`0.1.7`–`0.1.9`).** Retry-before-fail, tiered scan cadence, diagnostics
-  download — see [Resilience](#resilience). Register-level quarantine/bisection, the part
-  of `solax_modbus`'s engine this doesn't attempt, stays out of scope (see that section for
-  why).
+- **Phase 3 — done (`0.1.7`–`0.1.9`, `0.3.5`).** Retry-before-fail, transition-only warning logging, tiered scan cadence, write-trigger refresh, diagnostics download — see [Resilience](#resilience).
 - **`entry.runtime_data` idiom migration — done (`0.1.10`).**
-- **Phase 2 — done.** `select`/`number`/`switch`/`button` write entities for Remote Switch,
-  FeedIn Limitation, and Active Power Control — see [Status](#status) for what's been
-  exercised against the real inverter on a test instance so far.
+- **Phase 2 — done (`0.2.0`).** `select`/`number`/`switch`/`button` write entities for Remote Switch,
+  FeedIn Limitation, and Active Power Control.
 - **Phase 4 — code-complete, mock-verified (`0.3.0`).** Charger Use Mode, EPS Mode and
-  Passive Mode write entities — see [Status](#status). Hardware verification still pending:
-  no HYBRID Sofar inverter available to test against.
+  Passive Mode write entities — see [Status](#status).
+- **Brand Assets — done (`0.3.6`).** Local icons and logos in `custom_components/sofar_modbus/brand/`.
 - **Phase 5 — not started.** Energy dashboard device.
-- **Not started.** Serial (RTU) transport, delegating to Home Assistant's built-in Modbus
-  hub.
+- **Not started.** Serial (RTU) transport, delegating to Home Assistant's built-in Modbus hub.
