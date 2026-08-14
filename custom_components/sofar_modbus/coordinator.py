@@ -166,7 +166,7 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
 
     async def _async_first_poll(self) -> UpdateReport:
         """Settle the fast/slow tier split from the inverter's served components
-        and refresh the fast tier on startup.
+        and refresh all served components on startup.
         """
         if self._fast is None:
             if self.device._polled is None:
@@ -175,13 +175,12 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
             polled = self.device._polled or ()
             self._fast = {name: getattr(self.device, name) for name in polled if name in volatile}
             self._slow = {name: getattr(self.device, name) for name in polled if name not in volatile}
-        components_to_poll = self._fast if self._fast else dict(self._slow or {})
-        return await self._poll(components_to_poll)
+        return await self._poll(self._components_due())
 
     def _components_due(self) -> dict[str, SofarComponentBase]:
         assert self._fast is not None
         components = dict(self._fast)
-        if self._force_slow_tier or (self._cycle > 0 and self._cycle % _SLOW_TIER_EVERY_N_CYCLES == 0):
+        if self._force_slow_tier or self._cycle % _SLOW_TIER_EVERY_N_CYCLES == 0:
             assert self._slow is not None
             components.update(self._slow)
             self._force_slow_tier = False
