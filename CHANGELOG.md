@@ -9,6 +9,27 @@ and GitHub Release.
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-08-14
+
+### Changed
+
+- `sofar-modbus` is now installed from PyPI (`sofar-modbus>=0.1.4,<0.2.0`) instead of pinned
+  to a `git+https` tag of the `darkrain-nl/sofar-modbus` fork — the library published its
+  first PyPI release (`0.1.4`) at
+  [pypi.org/project/sofar-modbus](https://pypi.org/project/sofar-modbus/), sourced from the
+  same repository this project was already pinned to. `pyproject.toml` and
+  `manifest.json`'s `requirements` both updated; no code changes needed — the only change
+  between the previously-pinned `v0.1.3` and `0.1.4` is an additive
+  `SofarInverter.async_read_raw()` (a device-level equivalent of what this integration's own
+  `diagnostics.py` already builds by hand per-component) plus packaging/release-workflow
+  commits, nothing this integration's code path touches.
+
+### Verification
+
+- `ruff`/`mypy` clean against the freshly-installed PyPI package; all four `tests/lib/`
+  scripts pass unchanged.
+- Pure dependency-source change — no register/poll/entity behavior touched.
+
 ## [0.3.3] - 2026-08-14
 
 ### Fixed
