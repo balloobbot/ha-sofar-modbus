@@ -7,6 +7,7 @@
     ":combinePatchMinorReleases",
     "helpers:pinGitHubActionDigests"
   ],
+  "dependencyDashboard": false,
   "rebaseWhen": "conflicted",
   "ignorePaths": [
     "**/node_modules/**"
