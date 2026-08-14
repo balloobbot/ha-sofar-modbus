@@ -155,10 +155,10 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
         """
         if self.device._polled is None:
             await self.device.async_setup()
-        served = set(self.device._polled or ())
-        fast_names = _volatile_components() & served
-        self._fast = {name: getattr(self.device, name) for name in fast_names}
-        self._slow = {name: getattr(self.device, name) for name in served - fast_names}
+        volatile = _volatile_components()
+        polled = self.device._polled or ()
+        self._fast = {name: getattr(self.device, name) for name in polled if name in volatile}
+        self._slow = {name: getattr(self.device, name) for name in polled if name not in volatile}
         components_to_poll = self._fast if self._fast else dict(self._slow)
         return await self._poll(components_to_poll)
 
