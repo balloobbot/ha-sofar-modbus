@@ -36,11 +36,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry) -> boo
     if serial and inverter_type and device.inverter_type is not None:
         device.serial_number = serial
         device.model = model
-        device._polled = [
-            name
-            for name in _POLLED
-            if matches(device.inverter_type, getattr(device, name).applies_to)
-        ]
+        device._polled = [name for name in _POLLED if matches(device.inverter_type, getattr(device, name).applies_to)]
 
     coordinator = SofarDataUpdateCoordinator(hass, entry, connection, device, DEFAULT_SCAN_INTERVAL)
     # The coordinator's first refresh polls the fast tier + identity for rapid startup (<1s);

@@ -34,5 +34,21 @@ quote-style = "double"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+
+[tool.mypy]
+python_version = "3.13"
+show_error_codes = true
+follow_imports = "normal"
+local_partial_types = true
+strict_equality = true
+warn_redundant_casts = true
+warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+module = [
+    "pytest_homeassistant_custom_component.*",
+]
+ignore_missing_imports = true

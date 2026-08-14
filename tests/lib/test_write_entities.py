@@ -58,7 +58,11 @@ def _seed_serial(unit: MockModbusUnit, serial: str) -> None:
         unit.holding[0x445 + i] = (hi << 8) | lo
 
 
-async def _device_and_coordinator() -> tuple[SofarInverter, SofarDataUpdateCoordinator]:
+class _TestCoordinator(SofarDataUpdateCoordinator):
+    _refresh_calls: int
+
+
+async def _device_and_coordinator() -> tuple[SofarInverter, _TestCoordinator]:
     """A PV-only KTLX-G3 (this project's own reference hardware) with remote,
     feed-in and active-power-control all pre-seeded and already polled once.
     """
@@ -75,7 +79,7 @@ async def _device_and_coordinator() -> tuple[SofarInverter, SofarDataUpdateCoord
     assert report.complete, f"unexpected failures against the mock: {report.failed}"
     assert {"remote", "feed_in", "active_power_control"} <= report.updated
 
-    coordinator = SofarDataUpdateCoordinator.__new__(SofarDataUpdateCoordinator)
+    coordinator = _TestCoordinator.__new__(_TestCoordinator)
     coordinator.name = "test"
     coordinator.connection = _FakeConnection()  # type: ignore[assignment]
     coordinator.device = device
@@ -91,7 +95,7 @@ async def _device_and_coordinator() -> tuple[SofarInverter, SofarDataUpdateCoord
     return device, coordinator
 
 
-async def _hybrid_device_and_coordinator() -> tuple[SofarInverter, SofarDataUpdateCoordinator]:
+async def _hybrid_device_and_coordinator() -> tuple[SofarInverter, _TestCoordinator]:
     """A HYBRID identity (same serial prefix as test_smoke.py's HYBRID run) with
     charger, EPS and passive-mode all pre-seeded and already polled once.
 
@@ -118,7 +122,7 @@ async def _hybrid_device_and_coordinator() -> tuple[SofarInverter, SofarDataUpda
     assert report.complete, f"unexpected failures against the mock: {report.failed}"
     assert {"charger", "eps", "passive"} <= report.updated
 
-    coordinator = SofarDataUpdateCoordinator.__new__(SofarDataUpdateCoordinator)
+    coordinator = _TestCoordinator.__new__(_TestCoordinator)
     coordinator.name = "test-hybrid"
     coordinator.connection = _FakeConnection()  # type: ignore[assignment]
     coordinator.device = device
