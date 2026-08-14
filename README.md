@@ -200,6 +200,23 @@ first (a HACS install can point at the same inverter over the network without to
 existing `solax_modbus` setup at all), and only install it on your main instance once you're
 ready to remove `solax_modbus` there.
 
+## Migrating from `homeassistant-solax-modbus` & Energy Dashboard
+
+If you are migrating from `homeassistant-solax-modbus` and want to preserve all your historical solar generation data in Home Assistant's Energy Dashboard without any gaps or resets:
+
+1. **Remove `solax_modbus`** from your Home Assistant instance.
+2. **Install & set up `ha-sofar-modbus`** via HACS.
+3. **Preserve your historical records (Match the Entity ID)**:
+   Home Assistant stores long-term statistics (LTS) keyed by the entity's `entity_id`. `solax_modbus` typically created `sensor.sofar_solar_generation_total`, whereas Home Assistant's default naming for the new integration might assign `sensor.<area>_<device>_solar_generation_total` (e.g. `sensor.zolder_sofar_4_4_ktlx_g3_solar_generation_total`).
+   - Go to **Settings → Entities**.
+   - Search for `Solar Generation Total` (the new sensor created by `ha-sofar-modbus`).
+   - Click the sensor → click the **Settings gear ⚙️**.
+   - Change the **Entity ID** to match your existing Energy Dashboard entity ID (e.g. `sensor.sofar_solar_generation_total`).
+   - **Do not delete or re-add the sensor in Energy Dashboard settings** — Home Assistant will seamlessly continue appending new statistics to the existing historical series.
+4. **Energy Dashboard Setup**:
+   - **Solar production energy**: Select `Solar Generation Total` (`device_class: energy`, `state_class: total_increasing`).
+   - **Solar production power**: Select `PV Power Total` (`pv_power_total`) or `Active Power Output Total` for the live real-time flow animation.
+
 ## Development
 
 Dependencies are managed with [`uv`](https://github.com/astral-sh/uv):
