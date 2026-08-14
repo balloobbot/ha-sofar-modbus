@@ -32,10 +32,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry) -> boo
     device = SofarInverter(unit, read_eps=entry.data.get(CONF_READ_EPS, False))
 
     coordinator = SofarDataUpdateCoordinator(hass, entry, connection, device, DEFAULT_SCAN_INTERVAL)
-    # async_update() (called for us here) runs async_setup() internally on
-    # first use and settles device.inverter_type; ModbusError already maps to
-    # ConfigEntryNotReady via first_refresh's own handling, but an
-    # unrecognized serial doesn't raise on its own (sofar_modbus just leaves
+    # The coordinator's first refresh runs async_setup() internally to settle
+    # device.inverter_type and polls the fast tier for rapid startup; ModbusError
+    # maps to ConfigEntryNotReady via first_refresh's own handling, but an
+    # unrecognized serial doesn't raise on its own (sofar_modbus leaves
     # inverter_type at zero), so that still needs an explicit check.
     await coordinator.async_config_entry_first_refresh()
     if not device.inverter_type:

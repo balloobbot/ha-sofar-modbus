@@ -9,6 +9,18 @@ and GitHub Release.
 
 ## [Unreleased]
 
+## [0.3.8] - 2026-08-14
+
+### Changed
+
+- Initial coordinator refresh on startup now polls only the **fast tier** (volatile measurement components like `grid`, `state`, `pv_1_2`, `battery_1_2`, `battery_totals`) instead of all 16–18 components across both fast and slow tiers, cutting blocking startup time from ~11.8s down to ~1–1.5s (~85% reduction).
+- Entity platforms (`sensor.py`, `select.py`, `number.py`, `switch.py`, `button.py`, `diagnostics.py`) now discover served entities directly from `coordinator.served_components` (resolved via `device.async_setup()` on the serial number register `0x0445`) rather than requiring a full initial poll across slow registers.
+- `_async_probe` in `config_flow.py` now uses `await device.async_setup()` to retrieve model and serial numbers in ~100ms instead of polling the entire register map.
+
+### Verification
+
+- All standalone test suites (`test_smoke.py`, `test_coordinator.py`, `test_diagnostics.py`, `test_write_entities.py`), `pytest` (26 passed), `ruff` formatting/linting, and `mypy` checks pass.
+
 ## [0.3.7] - 2026-08-14
 
 ### Changed

@@ -72,8 +72,7 @@ _TOTAL_INCREASING_DIP_TOLERANCE = 0.01
 
 async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     coordinator = entry.runtime_data
-    report = coordinator.data
-    served = report.updated | set(report.failed)
+    served = coordinator.served_components
 
     entities = [
         (

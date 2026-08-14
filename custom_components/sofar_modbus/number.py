@@ -25,7 +25,7 @@ from .entity import SofarEntity
 
 async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     coordinator = entry.runtime_data
-    served = coordinator.data.updated | set(coordinator.data.failed)
+    served = coordinator.served_components
     entities: list[NumberEntity] = []
     if "feed_in" in served:
         entities.append(FeedInMaxPowerNumber(coordinator))

@@ -106,6 +106,15 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
         self._force_slow_tier = False
         self.pending: dict[str, Any] = {}
 
+    @property
+    def served_components(self) -> frozenset[str]:
+        """All component names served by this inverter type."""
+        if self.device._polled is not None:
+            return frozenset(self.device._polled)
+        if self.data is not None:
+            return frozenset(self.data.updated | set(self.data.failed))
+        return frozenset()
+
     def pending_or_live(self, key: str, live_value: Any) -> Any:
         """What a staged number/select/switch entity should show right now.
 
@@ -141,15 +150,17 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
             raise UpdateFailed(str(err)) from err
 
     async def _async_first_poll(self) -> UpdateReport:
-        """Poll everything, the way SofarInverter itself orchestrates it, and
-        use what it actually served to settle the fast/slow tier split.
+        """Settle the fast/slow tier split from the inverter's served components
+        and refresh the fast tier on startup.
         """
-        report = await self.device.async_update()
-        served = report.updated | set(report.failed)
+        if self.device._polled is None:
+            await self.device.async_setup()
+        served = set(self.device._polled or ())
         fast_names = _volatile_components() & served
         self._fast = {name: getattr(self.device, name) for name in fast_names}
         self._slow = {name: getattr(self.device, name) for name in served - fast_names}
-        return report
+        components_to_poll = self._fast if self._fast else dict(self._slow)
+        return await self._poll(components_to_poll)
 
     def _components_due(self) -> dict[str, SofarComponentBase]:
         assert self._fast is not None
