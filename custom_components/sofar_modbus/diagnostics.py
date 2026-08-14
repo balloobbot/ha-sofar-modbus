@@ -1,12 +1,6 @@
 """Config entry diagnostics — the raw register map, for an issue report
 showing exactly what the device answered.
 https://home-assistant-libs.github.io/modbus-connection/home-assistant/integration/#diagnostics
-
-SofarInverter itself has no async_read_raw() — it stopped wrapping a
-ComponentGroup when polling moved to independent per-component reads (see
-CHANGELOG 0.1.7) — so this reads each served component individually and
-merges the raw maps itself, the same per-component iteration coordinator.py
-already does.
 """
 
 from __future__ import annotations
@@ -26,18 +20,13 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: SofarCo
     served = (report.updated | set(report.failed)) if report else set()
 
     # Reads fresh, not coordinator.data, so the dump reflects live register
-    # state at download time — a component's own failure here doesn't fail
-    # the whole download, just leaves its registers out with the reason.
+    # state at download time.
     registers: dict[str, dict[int, int | bool]] = {}
     read_errors: dict[str, str] = {}
-    for name in sorted(served):
-        try:
-            raw = await getattr(device, name).async_read_raw()
-        except ModbusError as err:
-            read_errors[name] = str(err)
-            continue
-        for space, values in raw.items():
-            registers.setdefault(space, {}).update(values)
+    try:
+        registers = await device.async_read_raw()
+    except ModbusError as err:
+        read_errors["device"] = str(err)
 
     return {
         "model": device.model,

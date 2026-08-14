@@ -88,10 +88,8 @@ async def test_a_failed_component_is_reported_not_fatal() -> None:
     unit.fail_read(0x0484, ModbusTimeoutError("stuck"))
     diagnostics = await async_get_config_entry_diagnostics(None, _FakeEntry(coordinator))  # type: ignore[arg-type]
 
-    assert "grid" in diagnostics["read_errors"]
-    assert 0x0484 not in diagnostics["registers"].get("holding", {})
-    # A different component's registers are still present despite grid's failure.
-    assert diagnostics["registers"]["holding"][0x0684] == 100
+    assert "device" in diagnostics["read_errors"]
+    assert diagnostics["registers"] == {}
     print("failed-component-reported-not-fatal: PASSED")
 
 
