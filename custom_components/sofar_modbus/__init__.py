@@ -45,7 +45,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry) -> boo
     # inverter_type at zero), so that still needs an explicit check.
     await coordinator.async_config_entry_first_refresh()
     if not device.inverter_type:
-        raise ConfigEntryNotReady(f"unrecognized Sofar inverter, serial number: {device.serial_number!r}")
+        raise ConfigEntryNotReady(f"Unrecognized Sofar inverter model for {entry.title}")
 
     entry.runtime_data = coordinator
 

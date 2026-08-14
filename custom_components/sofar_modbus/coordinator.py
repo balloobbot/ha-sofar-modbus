@@ -47,8 +47,6 @@ from modbus_connection import ModbusConnection, ModbusConnectionError, ModbusErr
 from sofar_modbus.model import SofarComponentBase, UpdateReport
 from sofar_modbus.modern.device import SofarInverter
 
-from .const import DOMAIN
-
 _LOGGER = logging.getLogger(__name__)
 
 _TIMEOUT_DISCONNECT_THRESHOLD = 3
@@ -93,7 +91,7 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
             hass,
             _LOGGER,
             config_entry=entry,
-            name=f"{DOMAIN}_{device.serial_number}",
+            name=entry.title,
             update_interval=timedelta(seconds=scan_interval),
         )
         self.connection = connection
@@ -158,7 +156,7 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
         except ModbusTimeoutError as err:
             self._consecutive_timeouts += 1
             if self._consecutive_timeouts >= _TIMEOUT_DISCONNECT_THRESHOLD:
-                _LOGGER.warning(
+                _LOGGER.debug(
                     "%s: %d consecutive timed-out polls, recycling the connection",
                     self.name,
                     self._consecutive_timeouts,
