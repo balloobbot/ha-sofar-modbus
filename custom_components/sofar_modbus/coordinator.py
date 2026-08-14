@@ -58,11 +58,13 @@ type SofarConfigEntry = ConfigEntry[SofarDataUpdateCoordinator]
 
 
 def _volatile_components() -> frozenset[str]:
-    """Component names with at least one 'measurement' row.
+    """Component names with at least one 'measurement' row, plus 'identity'.
 
     Derived from sensor.py's own SENSOR_DESCRIPTIONS state_class metadata
     rather than a separately hand-maintained list, so there's one source of
     truth for what changes often enough to need every-cycle freshness.
+    'identity' is included so serial number and software versions are known
+    immediately on startup without delay.
     Components with only counters/settings or no sensor rows at all (write-only
     components like feed_in, active_power_control, passive, charger, remote)
     join the slow tier.
@@ -74,7 +76,12 @@ def _volatile_components() -> frozenset[str]:
     from .sensor import SENSOR_DESCRIPTIONS
 
     return frozenset(
-        description.component for description in SENSOR_DESCRIPTIONS if description.state_class == SensorStateClass.MEASUREMENT
+        {
+            description.component
+            for description in SENSOR_DESCRIPTIONS
+            if description.state_class == SensorStateClass.MEASUREMENT
+        }
+        | {"identity"}
     )
 
 
@@ -134,6 +141,11 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
         self._force_slow_tier = True
         await super().async_request_refresh()
 
+    async def async_refresh_slow_tier(self) -> None:
+        """Poll the slow tier (controls, settings, energy totals) in the background."""
+        self._force_slow_tier = True
+        await self.async_refresh()
+
     async def _async_update_data(self) -> UpdateReport:
         try:
             if self._fast is None:
@@ -166,7 +178,7 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
 
     async def _async_first_poll(self) -> UpdateReport:
         """Settle the fast/slow tier split from the inverter's served components
-        and refresh all served components on startup.
+        and refresh the fast tier on startup.
         """
         if self._fast is None:
             if self.device._polled is None:
@@ -175,12 +187,13 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
             polled = self.device._polled or ()
             self._fast = {name: getattr(self.device, name) for name in polled if name in volatile}
             self._slow = {name: getattr(self.device, name) for name in polled if name not in volatile}
-        return await self._poll(self._components_due())
+        components_to_poll = self._fast if self._fast else dict(self._slow or {})
+        return await self._poll(components_to_poll)
 
     def _components_due(self) -> dict[str, SofarComponentBase]:
         assert self._fast is not None
         components = dict(self._fast)
-        if self._force_slow_tier or self._cycle % _SLOW_TIER_EVERY_N_CYCLES == 0:
+        if self._force_slow_tier or (self._cycle > 0 and self._cycle % _SLOW_TIER_EVERY_N_CYCLES == 0):
             assert self._slow is not None
             components.update(self._slow)
             self._force_slow_tier = False

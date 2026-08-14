@@ -17,7 +17,7 @@ from sofar_modbus.modern.device import _POLLED, SofarInverter, identify
 from sofar_modbus.variants import matches
 
 from .connection import build_connection, unit_id
-from .const import CONF_READ_EPS, DEFAULT_SCAN_INTERVAL
+from .const import CONF_READ_EPS, DEFAULT_SCAN_INTERVAL, DOMAIN
 from .coordinator import SofarConfigEntry, SofarDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -43,8 +43,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry) -> boo
         ]
 
     coordinator = SofarDataUpdateCoordinator(hass, entry, connection, device, DEFAULT_SCAN_INTERVAL)
-    # The coordinator's first refresh polls the fast tier for rapid startup; ModbusError
-    # maps to ConfigEntryNotReady via first_refresh's own handling, but an
+    # The coordinator's first refresh polls the fast tier + identity for rapid startup (<1s);
+    # ModbusError maps to ConfigEntryNotReady via first_refresh's own handling, but an
     # unrecognized serial doesn't raise on its own (sofar_modbus leaves
     # inverter_type at zero), so that still needs an explicit check.
     await coordinator.async_config_entry_first_refresh()
@@ -54,6 +54,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry) -> boo
     entry.runtime_data = coordinator
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    # Immediately schedule a non-blocking background task to refresh the slow tier (controls, settings, energy totals)
+    entry.async_create_background_task(
+        hass,
+        coordinator.async_refresh_slow_tier(),
+        name=f"{DOMAIN}_{entry.unique_id}_initial_slow_refresh",
+    )
     return True
 
 

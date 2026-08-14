@@ -9,6 +9,16 @@ and GitHub Release.
 
 ## [Unreleased]
 
+## [0.3.12] - 2026-08-14
+
+### Changed
+
+- Settle startup latency and prevent blocking Home Assistant startup: initial coordinator refresh now polls fast measurements + identity (<1s), allowing HA setup to complete immediately and dismiss the startup banner without delay. An unblocked background task (`entry.async_create_background_task`) immediately refreshes the slow tier (controls, settings, energy totals) in the background.
+
+### Verification
+
+- All standalone test suites (`test_smoke.py`, `test_coordinator.py`, `test_diagnostics.py`, `test_write_entities.py`), `pytest` (28 passed), `ruff` formatting/linting, and `mypy` checks pass.
+
 ## [0.3.11] - 2026-08-14
 
 ### Changed
