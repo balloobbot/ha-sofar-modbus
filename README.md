@@ -1,8 +1,5 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/darkrain-nl/ha-sofar-modbus/main/custom_components/sofar_modbus/brand/dark_logo%402x.png">
-    <img alt="Sofar Solar Modbus" src="https://raw.githubusercontent.com/darkrain-nl/ha-sofar-modbus/main/custom_components/sofar_modbus/brand/logo%402x.png" width="340">
-  </picture>
+  <img alt="Sofar Solar Modbus" src="https://raw.githubusercontent.com/darkrain-nl/ha-sofar-modbus/main/custom_components/sofar_modbus/brand/logo%402x.png" width="340">
 </p>
 
 <h1 align="center">Sofar Inverter Modbus for Home Assistant</h1>
