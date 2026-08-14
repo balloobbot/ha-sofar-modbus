@@ -212,6 +212,25 @@ async def test_force_slow_tier_polls_slow_tier_on_off_cycles() -> None:
     print("force-slow-tier-polls-slow-tier-on-off-cycles: PASSED")
 
 
+async def test_first_poll_only_polls_fast_tier_and_exposes_all_served_components() -> None:
+    unit = MockModbusConnection().for_unit(1)
+    device = _device(unit)
+    coordinator = _coordinator(device, _FakeConnection())
+
+    report = await coordinator._async_update_data()
+    assert report.complete
+    # Fast tier polled immediately on startup
+    assert "grid" in report.updated
+    assert "state" in report.updated
+    # Slow tier deferred to avoid startup latency
+    assert "energy" not in report.updated
+    # But served_components exposes all components for entity creation
+    assert "grid" in coordinator.served_components
+    assert "energy" in coordinator.served_components
+    assert "feed_in" in coordinator.served_components
+    print("first-poll-only-polls-fast-tier: PASSED")
+
+
 async def main() -> None:
     await test_retry_recovers_a_transient_failure()
     await test_a_failure_that_survives_retry_is_tracked_and_leaves_others_alone()
@@ -221,6 +240,7 @@ async def main() -> None:
     await test_a_dead_link_raises_update_failed()
     await test_all_timeout_outage_raises_update_failed_and_skips_retry()
     await test_refusal_on_first_component_is_contained()
+    await test_first_poll_only_polls_fast_tier_and_exposes_all_served_components()
     print("ALL COORDINATOR TESTS PASSED")
 
 

@@ -16,8 +16,7 @@ from .coordinator import SofarConfigEntry
 async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: SofarConfigEntry) -> dict[str, Any]:
     coordinator = entry.runtime_data
     device = coordinator.device
-    report = coordinator.data
-    served = (report.updated | set(report.failed)) if report else set()
+    served = coordinator.served_components
 
     # Reads fresh, not coordinator.data, so the dump reflects live register
     # state at download time.
