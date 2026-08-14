@@ -135,22 +135,24 @@ class SofarTotalSensor(SofarEntity, RestoreSensor):
         if (last_data := await self.async_get_last_sensor_data()) is not None:
             if last_data.native_value is not None:
                 try:
-                    val = float(last_data.native_value)
+                    val = float(str(last_data.native_value))
                     self._attr_native_value = val
                     self._total_increasing_high_water = val
                 except (ValueError, TypeError):
-                    self._attr_native_value = last_data.native_value
+                    pass
 
     @property
     def native_value(self) -> int | float | None:
         component = getattr(self.coordinator.device, self.entity_description.component)
         value = getattr(component, self.entity_description.key)
         if value is not None:
-            if self.entity_description.state_class is SensorStateClass.TOTAL_INCREASING and isinstance(value, int | float):
+            if self.entity_description.state_class is SensorStateClass.TOTAL_INCREASING and isinstance(value, (int, float)):
                 self._attr_native_value = self._smoothed_total_increasing(float(value))
-            else:
+            elif isinstance(value, (int, float)):
                 self._attr_native_value = value
-        return self._attr_native_value
+        if isinstance(self._attr_native_value, (int, float)):
+            return self._attr_native_value
+        return None
 
     def _smoothed_total_increasing(self, value: float) -> float:
         """Hold a total_increasing sensor at its high-water mark through a

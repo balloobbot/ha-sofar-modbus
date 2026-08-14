@@ -1,0 +1,78 @@
+name: Bug Report
+description: Create a report to help us improve ha-sofar-modbus
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report an issue! Please provide as much detail as possible to help us troubleshoot.
+
+  - type: input
+    id: inverter_model
+    attributes:
+      label: Inverter Model
+      description: What is your exact Sofar inverter model? (e.g. 4.4KTLX-G3, HYD 6K-EP, etc.)
+      placeholder: e.g. 4.4KTLX-G3
+    validations:
+      required: true
+
+  - type: input
+    id: serial_prefix
+    attributes:
+      label: Serial Number Prefix
+      description: The first 4–6 characters of your inverter's serial number (e.g. SS2E..., SP1...)
+      placeholder: e.g. SS2E...
+    validations:
+      required: true
+
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant Version
+      description: What version of Home Assistant are you running?
+      placeholder: e.g. 2026.8.1
+    validations:
+      required: true
+
+  - type: input
+    id: integration_version
+    attributes:
+      label: Integration Version
+      description: What version of ha-sofar-modbus are you running?
+      placeholder: e.g. 0.3.6
+    validations:
+      required: true
+
+  - type: dropdown
+    id: connection_type
+    attributes:
+      label: Connection Type
+      options:
+        - Modbus TCP (Direct Ethernet / Wi-Fi)
+        - Modbus TCP via Serial Bridge (Waveshare, USR-W610, Elfin-EW11, etc.)
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: Describe the Bug
+      description: A clear and concise description of what the issue is.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Home Assistant Logs
+      description: Relevant log entries from Settings → System → Logs (wrap in code blocks).
+      render: shell
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics JSON (Recommended)
+      description: Go to Settings → Devices & Services → Sofar Inverter Modbus → Download Diagnostics, and paste or attach the JSON here.
+      render: json
