@@ -9,6 +9,12 @@ and GitHub Release.
 
 ## [Unreleased]
 
+## [0.3.6] - 2026-08-14
+
+### Added
+
+- Bundled official SOFAR brand assets locally in `custom_components/sofar_modbus/brand/` (`icon.png`, `dark_icon.png`, `logo.png`, `dark_logo.png` and `@2x` variants) matching the modern cerulean blue `#366DB0` and aurora cyan `#5EBECA` visual identity. Home Assistant serves these directly for integration and device cards without relying on external CDN brand fetches.
+
 ## [0.3.5] - 2026-08-14
 
 ### Changed
