@@ -19,7 +19,7 @@ missing (see the design note this ships alongside):
   from sensor.py's own state_class metadata — read only every
   _SLOW_TIER_EVERY_N_CYCLES-th cycle, cutting total registers read per poll.
 
-Also disconnect()s after repeated per-block timeouts to recover a link
+Also disconnect()s after repeated timed-out polls to recover a link
 that's up but unresponsive (a wedged serial-to-network bridge), and stores
 the report as coordinator.data so entities can tell which of them, if any,
 went stale.
@@ -142,10 +142,21 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
                 errors = list(report.failed.values())
                 cause = errors[0] if len(errors) == 1 else ExceptionGroup("all components failed to refresh", errors)
                 raise UpdateFailed(f"{self.name}: no component answered: {errors[0]}") from cause
+            self._consecutive_timeouts = 0
             return report
+        except ModbusTimeoutError as err:
+            self._consecutive_timeouts += 1
+            if self._consecutive_timeouts >= _TIMEOUT_DISCONNECT_THRESHOLD:
+                _LOGGER.warning(
+                    "%s: %d consecutive timed-out polls, recycling the connection",
+                    self.name,
+                    self._consecutive_timeouts,
+                )
+                await self.connection.disconnect()
+                self._consecutive_timeouts = 0
+            raise UpdateFailed(str(err)) from err
         except ModbusError as err:
-            # ModbusConnectionError (dead link) or uncontained ModbusTimeoutError
-            # (nothing answered at all on the initial component) reaches here,
+            # ModbusConnectionError (dead link) reaches here,
             # while per-block failures once alive are contained in UpdateReport.failed.
             raise UpdateFailed(str(err)) from err
 
@@ -203,18 +214,6 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
             )
             report = UpdateReport(report.updated | retry.updated, retry.failed)
 
-        if any(isinstance(cause, ModbusTimeoutError) for cause in report.failed.values()):
-            self._consecutive_timeouts += 1
-            if self._consecutive_timeouts >= _TIMEOUT_DISCONNECT_THRESHOLD:
-                _LOGGER.warning(
-                    "%s: %d consecutive polls with a timed-out block, recycling the connection",
-                    self.name,
-                    self._consecutive_timeouts,
-                )
-                await self.connection.disconnect()
-                self._consecutive_timeouts = 0
-        else:
-            self._consecutive_timeouts = 0
 
         for name, cause in report.failed.items():
             prev = self._consecutive_failures.get(name, 0)

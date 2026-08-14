@@ -94,7 +94,8 @@ async def test_retry_recovers_a_transient_failure() -> None:
 async def test_a_failure_that_survives_retry_is_tracked_and_leaves_others_alone() -> None:
     unit = MockModbusConnection().for_unit(1)
     device = _device(unit)
-    coordinator = _coordinator(device, _FakeConnection())
+    connection = _FakeConnection()
+    coordinator = _coordinator(device, connection)
     await coordinator._async_update_data()
 
     unit.fail_read(0x0484, ModbusTimeoutError("stuck"))
@@ -102,9 +103,12 @@ async def test_a_failure_that_survives_retry_is_tracked_and_leaves_others_alone(
     assert "grid" in report.failed
     assert "state" in report.updated, "a different fast-tier component must not be affected"
     assert coordinator._consecutive_failures["grid"] == 1
+    assert coordinator._consecutive_timeouts == 0, "partial timeout does not count as a link timeout"
 
     report = await coordinator._async_update_data()
     assert coordinator._consecutive_failures["grid"] == 2
+    assert coordinator._consecutive_timeouts == 0
+    assert connection.disconnect_calls == 0, "should not disconnect for partial timeouts"
     print("failure-survives-retry-is-tracked: PASSED")
 
 
@@ -115,12 +119,44 @@ async def test_disconnects_after_repeated_timeouts() -> None:
     coordinator = _coordinator(device, connection)
     await coordinator._async_update_data()
 
-    unit.fail_read(0x0484, ModbusTimeoutError("stuck"))
+    unit.fail_requests(ModbusTimeoutError("stuck"))
     for _ in range(3):
-        await coordinator._async_update_data()
+        try:
+            await coordinator._async_update_data()
+        except UpdateFailed:
+            pass
+        else:
+            raise AssertionError("expected UpdateFailed on fatal timeout")
     assert connection.disconnect_calls == 1, "should disconnect exactly once at the threshold"
     assert coordinator._consecutive_timeouts == 0, "counter resets after disconnecting"
     print("disconnects-after-repeated-timeouts: PASSED")
+
+
+async def test_consecutive_timeouts_resets_on_successful_poll() -> None:
+    unit = MockModbusConnection().for_unit(1)
+    device = _device(unit)
+    connection = _FakeConnection()
+    coordinator = _coordinator(device, connection)
+    await coordinator._async_update_data()
+
+    unit.fail_requests(ModbusTimeoutError("stuck"))
+    for _ in range(2):
+        try:
+            await coordinator._async_update_data()
+        except UpdateFailed:
+            pass
+        else:
+            raise AssertionError("expected UpdateFailed on fatal timeout")
+    assert coordinator._consecutive_timeouts == 2
+    assert connection.disconnect_calls == 0
+
+    # Device recovers before reaching the disconnect threshold
+    unit.fail_requests(None)
+    report = await coordinator._async_update_data()
+    assert report.complete
+    assert coordinator._consecutive_timeouts == 0, "counter should reset on recovery"
+    assert connection.disconnect_calls == 0
+    print("consecutive-timeouts-resets-on-successful-poll: PASSED")
 
 
 async def test_slow_tier_is_skipped_on_off_cycles() -> None:
@@ -235,6 +271,7 @@ async def main() -> None:
     await test_retry_recovers_a_transient_failure()
     await test_a_failure_that_survives_retry_is_tracked_and_leaves_others_alone()
     await test_disconnects_after_repeated_timeouts()
+    await test_consecutive_timeouts_resets_on_successful_poll()
     await test_slow_tier_is_skipped_on_off_cycles()
     await test_force_slow_tier_polls_slow_tier_on_off_cycles()
     await test_a_dead_link_raises_update_failed()
