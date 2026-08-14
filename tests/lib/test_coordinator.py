@@ -248,26 +248,27 @@ async def test_force_slow_tier_polls_slow_tier_on_off_cycles() -> None:
     print("force-slow-tier-polls-slow-tier-on-off-cycles: PASSED")
 
 
-async def test_first_poll_refreshes_all_served_components_and_subsequent_cycles_are_tiered() -> None:
+async def test_first_poll_only_polls_fast_tier_and_exposes_all_served_components() -> None:
     unit = MockModbusConnection().for_unit(1)
     device = _device(unit)
     coordinator = _coordinator(device, _FakeConnection())
 
-    # Cycle 0 (startup): All served components are refreshed immediately
+    # Cycle 0 (startup): Fast tier + identity polled immediately
     report = await coordinator._async_update_data()
     assert report.complete
     assert "grid" in report.updated
     assert "state" in report.updated
-    assert "energy" in report.updated
+    assert "identity" in report.updated
+    assert "energy" not in report.updated
     assert "grid" in coordinator.served_components
     assert "energy" in coordinator.served_components
     assert "feed_in" in coordinator.served_components
 
-    # Cycle 1 (15s): Fast tier only
+    # Background slow tier refresh
+    coordinator._force_slow_tier = True
     report = await coordinator._async_update_data()
-    assert "grid" in report.updated
-    assert "energy" not in report.updated
-    print("first-poll-refreshes-all-served-components: PASSED")
+    assert "energy" in report.updated
+    print("first-poll-only-polls-fast-tier: PASSED")
 
 
 async def test_pre_identified_device_initializes_tiers_in_memory() -> None:
@@ -285,10 +286,9 @@ async def test_pre_identified_device_initializes_tiers_in_memory() -> None:
         name for name in _POLLED if matches(device.inverter_type, getattr(device, name).applies_to)
     ]
 
-    # Seed fast tier and slow tier registers
+    # Seed fast tier registers
     unit.holding[0x0404] = 2
     unit.holding[0x0484] = 5000
-    unit.holding[0x0684] = 100
 
     coordinator = SofarDataUpdateCoordinator.__new__(SofarDataUpdateCoordinator)
     coordinator.name = "test"
@@ -308,12 +308,11 @@ async def test_pre_identified_device_initializes_tiers_in_memory() -> None:
     assert "energy" in coordinator.served_components
     assert "feed_in" in coordinator.served_components
 
-    # First update polls all served components without ever reading serial register 0x0445
+    # First update polls fast tier without ever reading serial register 0x0445
     report = await coordinator._async_update_data()
     assert report.complete
     assert "grid" in report.updated
     assert "state" in report.updated
-    assert "energy" in report.updated
     assert 0x0445 not in unit.read_events
     print("pre-identified-device-initializes-tiers-in-memory: PASSED")
 
@@ -328,7 +327,7 @@ async def main() -> None:
     await test_a_dead_link_raises_update_failed()
     await test_all_timeout_outage_raises_update_failed_and_skips_retry()
     await test_refusal_on_first_component_is_contained()
-    await test_first_poll_refreshes_all_served_components_and_subsequent_cycles_are_tiered()
+    await test_first_poll_only_polls_fast_tier_and_exposes_all_served_components()
     await test_pre_identified_device_initializes_tiers_in_memory()
     print("ALL COORDINATOR TESTS PASSED")
 
