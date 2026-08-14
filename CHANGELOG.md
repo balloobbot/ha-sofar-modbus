@@ -9,6 +9,48 @@ and GitHub Release.
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-08-14
+
+### Fixed
+
+- `total_increasing` energy sensors (solar/load/import/export generation and battery in/out)
+  flapped `unavailable` repeatedly whenever their underlying component failed a poll, even
+  when the failure was brief and the component had a perfectly good last-known value.
+  Confirmed live overnight (2026-08-13 → 08-14, ~21:12–06:05 local): the same physical
+  RS485/bus trouble hit both this integration and `solax_modbus` reading the same inverter
+  at the same time, but `solax_modbus`'s per-register quarantine held the energy counters at
+  their last good value throughout, while this integration's uniform per-component
+  `available` check surfaced every failed poll as `unavailable` on the four energy sensors,
+  dozens of times over the night.
+  - Rather than reaching for `solax_modbus`'s heavier register-bisection/quarantine engine
+    (already scoped out in favor of a lighter design — see the 0.1.8 entry above), extended
+    the entity-layer smoothing already shipped in 0.3.2 for value dips to the failure axis:
+    a `TOTAL_INCREASING` sensor's own `available` now only tracks whether the coordinator's
+    link is up at all (`SofarEntity._link_available`, a dead link still hides it), not
+    whether this specific poll's component happened to fail — `native_value` was already
+    returning the component's last successfully read value regardless of poll outcome, so
+    this stops hiding a value the entity already has.
+  - Deliberately scoped to `state_class == TOTAL_INCREASING` only: an `unavailable` grid
+    voltage or instant power reading during a real fault is meaningful and should still
+    surface as such. Only cumulative counters are the case where "flat because nothing
+    changed overnight" and "flat because the read failed" are indistinguishable and equally
+    harmless downstream.
+  - Not addressed here: this integration still has no equivalent to `solax_modbus`'s
+    communication-health diagnostic entity, so a genuine multi-hour link problem is no
+    longer visible-but-noisy — it's just invisible. Left as a separate follow-up.
+
+### Verification
+
+- New regression test in `tests/lib/test_smoke.py`
+  (`total-increasing-holds-available-through-failed-poll`) covers: a `TOTAL_INCREASING`
+  sensor stays available and keeps its last value when its own component fails a poll; a
+  plain measurement sensor (`grid_frequency`) still goes unavailable on its own component's
+  failed poll, confirming the override doesn't leak beyond `TOTAL_INCREASING`; a genuinely
+  dead link (`last_update_success=False`) still overrides the hold.
+- `ruff`/`mypy` clean; all four `tests/lib/` scripts pass.
+- Pure entity-layer availability change — no register/poll behavior touched, so mock
+  verification is sufficient; not yet re-deployed to `hatest` to watch tonight's window.
+
 ## [0.3.2] - 2026-08-13
 
 ### Fixed

@@ -93,6 +93,18 @@ class SofarSensor(SofarEntity, SensorEntity):
         self._total_increasing_high_water: float | None = None
 
     @property
+    def available(self) -> bool:
+        # A total_increasing counter holds its last known value through a
+        # per-component read failure the same way _smoothed_total_increasing
+        # holds it through a small dip: nothing meaningful is lost by staying
+        # flat overnight, and native_value already returns the component's
+        # last successfully read value regardless of this poll's outcome. A
+        # dead link still overrides this via _link_available.
+        if self.entity_description.state_class is SensorStateClass.TOTAL_INCREASING:
+            return self._link_available
+        return super().available
+
+    @property
     def native_value(self) -> str | int | float | date | None:
         component = getattr(self.coordinator.device, self.entity_description.component)
         value = getattr(component, self.entity_description.key)

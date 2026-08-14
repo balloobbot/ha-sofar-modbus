@@ -19,6 +19,7 @@ from pathlib import Path
 # instead, the same way test_coordinator.py/test_diagnostics.py do.
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from modbus_connection import ModbusTimeoutError  # noqa: E402
 from modbus_connection.mock import MockModbusConnection  # noqa: E402
 from sofar_modbus.model import SofarComponentBase  # noqa: E402
 from sofar_modbus.modern.device import SofarInverter  # noqa: E402
@@ -164,10 +165,68 @@ async def _check_total_increasing_dip_guard() -> None:
     print("total-increasing-dip-guard: PASSED")
 
 
+async def _check_total_increasing_holds_available_through_failed_poll() -> None:
+    """A total_increasing counter must stay available (and keep its last
+    value) when its own component fails to refresh this poll — same
+    principle as the dip guard, applied to the failure axis: overnight
+    read trouble shouldn't flap the energy dashboard's sensors unavailable
+    every few minutes. A plain measurement sensor (grid_frequency) must
+    still go unavailable when its component fails, so the override doesn't
+    leak beyond TOTAL_INCREASING. Regression guard for
+    SofarSensor.available / SofarEntity._link_available.
+    """
+    from types import SimpleNamespace
+
+    from custom_components.sofar_modbus.sensor import SofarSensor
+
+    unit = MockModbusConnection().for_unit(1)
+    _seed_serial(unit, "SS2ES104N5S445")
+    unit.holding[0x0484] = 5000  # grid_frequency
+
+    device = SofarInverter(unit)
+    report = await device.async_update()
+    assert report.complete, f"unexpected failures against the mock: {report.failed}"
+
+    energy_description = next(d for d in SENSOR_DESCRIPTIONS if d.key == "load_consumption_total")
+    grid_description = next(d for d in SENSOR_DESCRIPTIONS if d.key == "grid_frequency")
+
+    def _coordinator(current_report: object) -> object:
+        return SimpleNamespace(device=device, config_entry=SimpleNamespace(title="Test Sofar"), data=current_report, last_update_success=True)
+
+    energy_entity = SofarSensor(_coordinator(report), energy_description)  # type: ignore[arg-type]
+    grid_entity = SofarSensor(_coordinator(report), grid_description)  # type: ignore[arg-type]
+    assert energy_entity.available and grid_entity.available, "both should be available after a clean poll"
+    held_value = energy_entity.native_value
+
+    unit.fail_read(0x0684, ModbusTimeoutError("simulated overnight dropout"))  # solar_generation_today's block, same 'energy' component
+    energy_failed_report = await device.async_update()
+    assert "energy" in energy_failed_report.failed, f"expected energy to fail this poll: {energy_failed_report.updated}"
+    unit.fail_read(0x0684, None)  # clear it before the next poll
+
+    energy_entity = SofarSensor(_coordinator(energy_failed_report), energy_description)  # type: ignore[arg-type]
+    assert energy_entity.available, "a total_increasing sensor must hold available through its own component's failure"
+    assert energy_entity.native_value == held_value, "it must keep reporting the last known value, not go blank"
+
+    unit.fail_read(0x0484, ModbusTimeoutError("simulated overnight dropout"))  # grid_frequency's own block
+    grid_failed_report = await device.async_update()
+    assert "grid" in grid_failed_report.failed, f"expected grid to fail this poll: {grid_failed_report.updated}"
+
+    grid_entity = SofarSensor(_coordinator(grid_failed_report), grid_description)  # type: ignore[arg-type]
+    assert not grid_entity.available, "a plain measurement sensor must still go unavailable on its own component's failed poll"
+
+    dead_link_entity = SofarSensor(
+        SimpleNamespace(device=device, config_entry=SimpleNamespace(title="Test Sofar"), data=energy_failed_report, last_update_success=False),
+        energy_description,
+    )  # type: ignore[arg-type]
+    assert not dead_link_entity.available, "a genuinely dead link must still override the total_increasing hold"
+    print("total-increasing-holds-available-through-failed-poll: PASSED")
+
+
 async def main() -> None:
     _check_all_descriptions_resolve()
     await _check_enum_sensor_renders_as_text()
     await _check_total_increasing_dip_guard()
+    await _check_total_increasing_holds_available_through_failed_poll()
 
     pv_built = await _run("SS2ES104N5S445", "PV (live hardware serial)")
     hybrid_built = await _run("SP1XXES100XX", "HYBRID (SP1 prefix)")
