@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 # sensor.py has package-relative imports (.coordinator, .entity), so unlike
 # the old standalone generated_sensors.py it can't be loaded as a bare
@@ -20,11 +21,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from modbus_connection import ModbusTimeoutError  # noqa: E402
+from modbus_connection.encode import encode_int  # noqa: E402
 from modbus_connection.mock import MockModbusConnection  # noqa: E402
 from sofar_modbus.model import SofarComponentBase  # noqa: E402
 from sofar_modbus.modern.device import SofarInverter  # noqa: E402
 
-from custom_components.sofar_modbus.sensor import SENSOR_DESCRIPTIONS  # noqa: E402
+from custom_components.sofar_modbus.sensor import SENSOR_DESCRIPTIONS, SofarSensor, SofarTotalSensor  # noqa: E402
 
 
 def _check_all_descriptions_resolve() -> None:
@@ -102,10 +104,6 @@ async def _check_enum_sensor_renders_as_text() -> None:
     showed before device_class=ENUM/options were wired up. Regression guard
     for that wiring in sensor.py and generate_sofar_model.py.
     """
-    from types import SimpleNamespace
-
-    from custom_components.sofar_modbus.sensor import SofarSensor
-
     unit = MockModbusConnection().for_unit(1)
     _seed_serial(unit, "SS2ES104N5S445")
     unit.holding[0x0404] = 2  # system_state -> GRID_CONNECTED
@@ -127,12 +125,6 @@ async def _check_total_increasing_dip_guard() -> None:
     counter's midnight reset) must pass straight through. Regression guard for
     SofarSensor._smoothed_total_increasing.
     """
-    from types import SimpleNamespace
-
-    from modbus_connection.encode import encode_int
-
-    from custom_components.sofar_modbus.sensor import SofarSensor
-
     unit = MockModbusConnection().for_unit(1)
     _seed_serial(unit, "SS2ES104N5S445")
 
@@ -148,7 +140,7 @@ async def _check_total_increasing_dip_guard() -> None:
 
     coordinator = SimpleNamespace(device=device, config_entry=SimpleNamespace(title="Test Sofar"))
     description = next(d for d in SENSOR_DESCRIPTIONS if d.key == "load_consumption_total")
-    entity = SofarSensor(coordinator, description)  # type: ignore[arg-type]
+    entity = SofarTotalSensor(coordinator, description)  # type: ignore[arg-type]
     assert entity.native_value == 17506.4, f"expected the seeded value, got {entity.native_value!r}"
 
     _set_load_consumption_total(17506.3)  # a ~0.0006% dip -> torn-read noise
@@ -175,10 +167,6 @@ async def _check_total_increasing_holds_available_through_failed_poll() -> None:
     leak beyond TOTAL_INCREASING. Regression guard for
     SofarSensor.available / SofarEntity._link_available.
     """
-    from types import SimpleNamespace
-
-    from custom_components.sofar_modbus.sensor import SofarSensor
-
     unit = MockModbusConnection().for_unit(1)
     _seed_serial(unit, "SS2ES104N5S445")
     unit.holding[0x0484] = 5000  # grid_frequency
@@ -193,7 +181,7 @@ async def _check_total_increasing_holds_available_through_failed_poll() -> None:
     def _coordinator(current_report: object) -> object:
         return SimpleNamespace(device=device, config_entry=SimpleNamespace(title="Test Sofar"), data=current_report, last_update_success=True)
 
-    energy_entity = SofarSensor(_coordinator(report), energy_description)  # type: ignore[arg-type]
+    energy_entity = SofarTotalSensor(_coordinator(report), energy_description)  # type: ignore[arg-type]
     grid_entity = SofarSensor(_coordinator(report), grid_description)  # type: ignore[arg-type]
     assert energy_entity.available and grid_entity.available, "both should be available after a clean poll"
     held_value = energy_entity.native_value
@@ -203,7 +191,7 @@ async def _check_total_increasing_holds_available_through_failed_poll() -> None:
     assert "energy" in energy_failed_report.failed, f"expected energy to fail this poll: {energy_failed_report.updated}"
     unit.fail_read(0x0684, None)  # clear it before the next poll
 
-    energy_entity = SofarSensor(_coordinator(energy_failed_report), energy_description)  # type: ignore[arg-type]
+    energy_entity = SofarTotalSensor(_coordinator(energy_failed_report), energy_description)  # type: ignore[arg-type]
     assert energy_entity.available, "a total_increasing sensor must hold available through its own component's failure"
     assert energy_entity.native_value == held_value, "it must keep reporting the last known value, not go blank"
 
@@ -214,7 +202,7 @@ async def _check_total_increasing_holds_available_through_failed_poll() -> None:
     grid_entity = SofarSensor(_coordinator(grid_failed_report), grid_description)  # type: ignore[arg-type]
     assert not grid_entity.available, "a plain measurement sensor must still go unavailable on its own component's failed poll"
 
-    dead_link_entity = SofarSensor(
+    dead_link_entity = SofarTotalSensor(
         SimpleNamespace(device=device, config_entry=SimpleNamespace(title="Test Sofar"), data=energy_failed_report, last_update_success=False),
         energy_description,
     )  # type: ignore[arg-type]
@@ -228,11 +216,46 @@ async def _check_total_increasing_holds_available_through_failed_poll() -> None:
     print("total-increasing-holds-available-through-failed-poll: PASSED")
 
 
+async def _check_total_sensor_restores_state_and_seeds_high_water() -> None:
+    unit = MockModbusConnection().for_unit(1)
+    _seed_serial(unit, "SS2ES104N5S445")
+    device = SofarInverter(unit)
+    await device.async_setup()
+
+    coordinator = SimpleNamespace(
+        device=device,
+        config_entry=SimpleNamespace(title="Test Sofar"),
+        async_add_listener=lambda *args, **kwargs: (lambda: None),
+    )
+    description = next(d for d in SENSOR_DESCRIPTIONS if d.key == "load_consumption_total")
+    entity = SofarTotalSensor(coordinator, description)  # type: ignore[arg-type]
+    entity.async_on_remove = lambda *args, **kwargs: None  # type: ignore[method-assign]
+
+    # Mock async_get_last_sensor_data
+    entity.async_get_last_sensor_data = lambda: asyncio.sleep(0, result=SimpleNamespace(native_value="1234.5"))  # type: ignore[method-assign]
+    await entity.async_added_to_hass()
+
+    assert entity.native_value == 1234.5, f"expected restored 1234.5, got {entity.native_value!r}"
+    assert entity._total_increasing_high_water == 1234.5
+
+    # A torn read slightly below the restored mark is held
+    def _set_load_consumption_total_restored(kwh: float) -> None:
+        raw = round(kwh / 0.1)
+        for addr, word in zip(range(0x068A, 0x068C), encode_int(raw, count=2), strict=True):
+            unit.holding[addr] = word
+
+    _set_load_consumption_total_restored(1234.4)
+    await device.async_update()
+    assert entity.native_value == 1234.5, f"torn read on first poll after restart must be held against restored high water, got {entity.native_value!r}"
+    print("total-sensor-restores-state-and-seeds-high-water: PASSED")
+
+
 async def main() -> None:
     _check_all_descriptions_resolve()
     await _check_enum_sensor_renders_as_text()
     await _check_total_increasing_dip_guard()
     await _check_total_increasing_holds_available_through_failed_poll()
+    await _check_total_sensor_restores_state_and_seeds_high_water()
 
     pv_built = await _run("SS2ES104N5S445", "PV (live hardware serial)")
     hybrid_built = await _run("SP1XXES100XX", "HYBRID (SP1 prefix)")

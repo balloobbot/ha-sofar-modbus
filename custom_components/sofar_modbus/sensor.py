@@ -20,6 +20,7 @@ from datetime import date
 from enum import IntEnum
 
 from homeassistant.components.sensor import (
+    RestoreSensor,
     SensorDeviceClass,
     SensorEntity,
     SensorEntityDescription,
@@ -75,7 +76,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_
     served = report.updated | set(report.failed)
 
     entities = [
-        SofarSensor(coordinator, description)
+        (
+            SofarTotalSensor
+            if description.state_class in (SensorStateClass.TOTAL, SensorStateClass.TOTAL_INCREASING)
+            else SofarSensor
+        )(coordinator, description)
         for description in SENSOR_DESCRIPTIONS
         if description.component in served  # not served by this inverter type otherwise
     ]
@@ -90,18 +95,6 @@ class SofarSensor(SofarEntity, SensorEntity):
     def __init__(self, coordinator: SofarDataUpdateCoordinator, description: SofarSensorDescription) -> None:
         super().__init__(coordinator, description.key, description.component)
         self.entity_description = description
-        self._total_increasing_high_water: float | None = None
-
-    @property
-    def available(self) -> bool:
-        # Total and total_increasing counters hold available unconditionally
-        # (even across link drops or offline nights) so long-term statistics
-        # and the energy dashboard stay unbroken. Plain measurement and
-        # state sensors go unavailable when their component fails or the
-        # link drops.
-        if self.entity_description.state_class in (SensorStateClass.TOTAL, SensorStateClass.TOTAL_INCREASING):
-            return True
-        return super().available
 
     @property
     def native_value(self) -> str | int | float | date | None:
@@ -112,9 +105,52 @@ class SofarSensor(SofarEntity, SensorEntity):
         # in its `options`, rather than showing a bare number.
         if isinstance(value, IntEnum):
             return _enum_label(value.name)
-        if self.entity_description.state_class is SensorStateClass.TOTAL_INCREASING and isinstance(value, int | float):
-            return self._smoothed_total_increasing(float(value))
         return value
+
+
+class SofarTotalSensor(SofarEntity, RestoreSensor):
+    """A long-term statistic: it holds its last value, and may outlive the device.
+
+    Restored on startup so energy dashboard sensors never show `unknown`
+    during the boot-up window or overnight, and so the dip guard's high-water
+    mark anchors immediately rather than accepting a torn read on first poll.
+    """
+
+    entity_description: SofarSensorDescription
+
+    def __init__(self, coordinator: SofarDataUpdateCoordinator, description: SofarSensorDescription) -> None:
+        super().__init__(coordinator, description.key, description.component)
+        self.entity_description = description
+        self._total_increasing_high_water: float | None = None
+
+    @property
+    def available(self) -> bool:
+        # Total and total_increasing counters hold available unconditionally
+        # (even across link drops or offline nights) so long-term statistics
+        # and the energy dashboard stay unbroken.
+        return True
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if (last_data := await self.async_get_last_sensor_data()) is not None:
+            if last_data.native_value is not None:
+                try:
+                    val = float(last_data.native_value)
+                    self._attr_native_value = val
+                    self._total_increasing_high_water = val
+                except (ValueError, TypeError):
+                    self._attr_native_value = last_data.native_value
+
+    @property
+    def native_value(self) -> int | float | None:
+        component = getattr(self.coordinator.device, self.entity_description.component)
+        value = getattr(component, self.entity_description.key)
+        if value is not None:
+            if self.entity_description.state_class is SensorStateClass.TOTAL_INCREASING and isinstance(value, int | float):
+                self._attr_native_value = self._smoothed_total_increasing(float(value))
+            else:
+                self._attr_native_value = value
+        return self._attr_native_value
 
     def _smoothed_total_increasing(self, value: float) -> float:
         """Hold a total_increasing sensor at its high-water mark through a
