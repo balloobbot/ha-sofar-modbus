@@ -74,9 +74,7 @@ def _volatile_components() -> frozenset[str]:
     from .sensor import SENSOR_DESCRIPTIONS
 
     return frozenset(
-        description.component
-        for description in SENSOR_DESCRIPTIONS
-        if description.state_class == SensorStateClass.MEASUREMENT
+        description.component for description in SENSOR_DESCRIPTIONS if description.state_class == SensorStateClass.MEASUREMENT
     )
 
 
@@ -137,9 +135,9 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
                 raise UpdateFailed(f"{self.name}: no component answered: {errors[0]}") from cause
             return report
         except ModbusError as err:
-            # In practice only ModbusConnectionError reaches here — a dead
-            # link, not a single bad block, which the poll already contains
-            # into UpdateReport.failed instead of raising.
+            # ModbusConnectionError (dead link) or uncontained ModbusTimeoutError
+            # (nothing answered at all on the initial component) reaches here,
+            # while per-block failures once alive are contained in UpdateReport.failed.
             raise UpdateFailed(str(err)) from err
 
     async def _async_first_poll(self) -> UpdateReport:
@@ -162,7 +160,7 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
             self._force_slow_tier = False
         return components
 
-    async def _poll(self, components: dict[str, SofarComponentBase]) -> UpdateReport:
+    async def _poll(self, components: dict[str, SofarComponentBase], allow_fatal_timeout: bool = True) -> UpdateReport:
         """One attempt at each of ``components``, no retry."""
         updated: set[str] = set()
         failed: dict[str, ModbusError] = {}
@@ -171,6 +169,10 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
                 await component.async_update()
             except ModbusConnectionError:
                 raise
+            except ModbusTimeoutError as err:
+                if allow_fatal_timeout and not updated and not failed:
+                    raise  # nothing answered at all: assume the rest time out too
+                failed[name] = err
             except ModbusError as err:
                 failed[name] = err
             else:
@@ -184,7 +186,10 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
         outage) to avoid doubling the timeout latency when the link is down.
         """
         if report.failed and report.updated:
-            retry = await self._poll({name: getattr(self.device, name) for name in report.failed})
+            retry = await self._poll(
+                {name: getattr(self.device, name) for name in report.failed},
+                allow_fatal_timeout=False,
+            )
             report = UpdateReport(report.updated | retry.updated, retry.failed)
 
         if any(isinstance(cause, ModbusTimeoutError) for cause in report.failed.values()):

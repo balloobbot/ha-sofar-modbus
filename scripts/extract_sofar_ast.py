@@ -19,9 +19,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-UPSTREAM = Path(
-    "/home/darkrain/homeassistant/homeassistant-solax-modbus/custom_components/solax_modbus/plugin_sofar.py"
-)
+UPSTREAM = Path("/home/darkrain/homeassistant/homeassistant-solax-modbus/custom_components/solax_modbus/plugin_sofar.py")
 
 # Bitmask constants copied from plugin_sofar.py's module-level assignments,
 # needed to evaluate `allowedtypes=HYBRID | X3 | GEN` into an actual int.

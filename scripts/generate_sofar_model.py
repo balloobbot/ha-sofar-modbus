@@ -50,9 +50,7 @@ _GENERATED_MARKER = "# GENERATOR: generated below"
 
 def upstream_commit() -> str:
     try:
-        return subprocess.check_output(
-            ["git", "-C", str(UPSTREAM_REPO), "rev-parse", "--short", "HEAD"], text=True
-        ).strip()
+        return subprocess.check_output(["git", "-C", str(UPSTREAM_REPO), "rev-parse", "--short", "HEAD"], text=True).strip()
     except Exception:
         return "unknown"
 
