@@ -41,7 +41,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_
 class ActivePowerControlSwitch(SofarEntity, SwitchEntity):
     """Active Power Control — staged; press Update to apply."""
 
-    _attr_name = "Active Power Control"
+    _attr_translation_key = _KEY
 
     def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
         super().__init__(coordinator, _KEY, "active_power_control")

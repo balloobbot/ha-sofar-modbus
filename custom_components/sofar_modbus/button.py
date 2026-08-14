@@ -37,7 +37,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_
 class FeedInUpdateButton(SofarEntity, ButtonEntity):
     """FeedIn: Update — writes the staged (or last-read) mode and power together."""
 
-    _attr_name = "FeedIn: Update"
+    _attr_translation_key = "feedin_update"
 
     def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
         super().__init__(coordinator, "feedin_update", "feed_in")
@@ -60,7 +60,7 @@ class FeedInUpdateButton(SofarEntity, ButtonEntity):
 class ActivePowerControlUpdateButton(SofarEntity, ButtonEntity):
     """Active Power Control: Update — writes the staged (or last-read) enable flag and limit together."""
 
-    _attr_name = "Active Power Control: Update"
+    _attr_translation_key = "active_power_control_update"
 
     def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
         super().__init__(coordinator, "active_power_control_update", "active_power_control")
@@ -83,7 +83,7 @@ class ActivePowerControlUpdateButton(SofarEntity, ButtonEntity):
 class PassiveTimeoutUpdateButton(SofarEntity, ButtonEntity):
     """Passive: Timeout Update — writes the staged (or last-read) timeout and action together."""
 
-    _attr_name = "Passive: Timeout Update"
+    _attr_translation_key = "passive_timeout_update"
 
     def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
         super().__init__(coordinator, "passive_timeout_update", "passive")
@@ -106,7 +106,7 @@ class PassiveTimeoutUpdateButton(SofarEntity, ButtonEntity):
 class PassivePowerUpdateButton(SofarEntity, ButtonEntity):
     """Passive: Power Update — writes the staged (or last-read) grid power and battery power window together."""
 
-    _attr_name = "Passive: Power Update"
+    _attr_translation_key = "passive_power_update"
 
     def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
         super().__init__(coordinator, "passive_power_update", "passive")

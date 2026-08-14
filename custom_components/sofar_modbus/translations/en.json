@@ -8,16 +8,88 @@
                     "name": "Name",
                     "host": "Host",
                     "port": "Port",
-                    "modbus_addr": "Modbus unit ID"
+                    "modbus_addr": "Modbus unit ID",
+                    "read_eps": "Poll EPS / backup registers"
+                }
+            },
+            "reconfigure": {
+                "title": "Reconfigure Sofar inverter",
+                "description": "Update the network connection settings for this inverter.",
+                "data": {
+                    "host": "Host",
+                    "port": "Port",
+                    "modbus_addr": "Modbus unit ID",
+                    "read_eps": "Poll EPS / backup registers"
                 }
             }
         },
         "error": {
             "cannot_connect": "Could not connect to the inverter, or the connection failed while reading it.",
-            "unrecognized_inverter": "The device answered, but its serial number doesn't match a known Sofar model."
+            "unrecognized_inverter": "The device answered, but its serial number doesn't match a known Sofar model.",
+            "different_serial": "The reconfigured device has a different serial number from the original inverter."
         },
         "abort": {
-            "already_configured": "This inverter is already configured."
+            "already_configured": "This inverter is already configured.",
+            "reconfigure_successful": "Reconfiguration was successful.",
+            "different_serial": "The reconfigured device has a different serial number from the original inverter."
+        }
+    },
+    "entity": {
+        "button": {
+            "feedin_update": {
+                "name": "Feed-in limit update"
+            },
+            "active_power_control_update": {
+                "name": "Active power control update"
+            },
+            "passive_timeout_update": {
+                "name": "Passive timeout update"
+            },
+            "passive_power_update": {
+                "name": "Passive power update"
+            }
+        },
+        "number": {
+            "feedin_max_power": {
+                "name": "Feed-in maximum power"
+            },
+            "active_power_export_limit": {
+                "name": "Active power export limit"
+            },
+            "passive_mode_timeout": {
+                "name": "Passive mode timeout"
+            },
+            "passive_mode_grid_power": {
+                "name": "Passive mode desired grid power"
+            },
+            "passive_mode_battery_power_min": {
+                "name": "Passive mode minimum battery power"
+            },
+            "passive_mode_battery_power_max": {
+                "name": "Passive mode maximum battery power"
+            }
+        },
+        "select": {
+            "remote_switch_on_off": {
+                "name": "Remote switch"
+            },
+            "feedin_limitation_mode": {
+                "name": "Feed-in limitation mode"
+            },
+            "charger_use_mode": {
+                "name": "Charger use mode"
+            },
+            "eps_control": {
+                "name": "EPS mode"
+            },
+            "passive_mode_timeout_action": {
+                "name": "Passive mode timeout action"
+            }
+        },
+        "switch": {
+            "active_power_control_enabled": {
+                "name": "Active power control"
+            }
         }
     }
 }
