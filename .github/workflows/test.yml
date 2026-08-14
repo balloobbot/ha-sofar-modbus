@@ -8,11 +8,8 @@ on:
 
 jobs:
   test:
-    name: Test & Lint (Python ${{ matrix.python-version }})
+    name: Test & Lint
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.12", "3.13"]
 
     steps:
       - name: Checkout code
@@ -24,11 +21,11 @@ jobs:
           enable-cache: true
           version: "latest"
 
-      - name: Set up Python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }}
+      - name: Set up Python
+        run: uv python install 3.13
 
       - name: Install dependencies
-        run: uv sync --group test --group dev
+        run: uv sync --locked --group test --group dev
 
       - name: Lint with Ruff
         run: uv run ruff check .
