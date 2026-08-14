@@ -13,7 +13,8 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 
-from sofar_modbus.modern.device import SofarInverter
+from sofar_modbus.modern.device import _POLLED, SofarInverter, identify
+from sofar_modbus.variants import matches
 
 from .connection import build_connection, unit_id
 from .const import CONF_READ_EPS, DEFAULT_SCAN_INTERVAL
@@ -29,11 +30,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry) -> boo
     entry.async_on_unload(connection.close)
 
     unit = connection.for_unit(unit_id(entry.data))
-    device = SofarInverter(unit, read_eps=entry.data.get(CONF_READ_EPS, False))
+    serial = entry.unique_id
+    inverter_type, model = identify(serial) if serial else (None, None)
+    device = SofarInverter(unit, inverter_type=inverter_type, read_eps=entry.data.get(CONF_READ_EPS, False))
+    if serial and inverter_type and device.inverter_type is not None:
+        device.serial_number = serial
+        device.model = model
+        device._polled = [
+            name
+            for name in _POLLED
+            if matches(device.inverter_type, getattr(device, name).applies_to)
+        ]
 
     coordinator = SofarDataUpdateCoordinator(hass, entry, connection, device, DEFAULT_SCAN_INTERVAL)
-    # The coordinator's first refresh runs async_setup() internally to settle
-    # device.inverter_type and polls the fast tier for rapid startup; ModbusError
+    # The coordinator's first refresh polls the fast tier for rapid startup; ModbusError
     # maps to ConfigEntryNotReady via first_refresh's own handling, but an
     # unrecognized serial doesn't raise on its own (sofar_modbus leaves
     # inverter_type at zero), so that still needs an explicit check.

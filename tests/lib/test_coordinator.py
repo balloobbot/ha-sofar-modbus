@@ -267,6 +267,52 @@ async def test_first_poll_only_polls_fast_tier_and_exposes_all_served_components
     print("first-poll-only-polls-fast-tier: PASSED")
 
 
+async def test_pre_identified_device_initializes_tiers_in_memory() -> None:
+    from sofar_modbus.modern.device import _POLLED, identify
+    from sofar_modbus.variants import matches
+
+    unit = MockModbusConnection().for_unit(1)
+    # Note: no serial seeded in holding registers!
+    serial = "SP1XXES100XX"
+    inverter_type, model = identify(serial)
+    device = SofarInverter(unit, inverter_type=inverter_type)
+    device.serial_number = serial
+    device.model = model
+    device._polled = [
+        name for name in _POLLED if matches(device.inverter_type, getattr(device, name).applies_to)
+    ]
+
+    # Seed only fast tier registers (grid, state)
+    unit.holding[0x0404] = 2
+    unit.holding[0x0484] = 5000
+
+    coordinator = SofarDataUpdateCoordinator.__new__(SofarDataUpdateCoordinator)
+    coordinator.name = "test"
+    coordinator.connection = _FakeConnection()  # type: ignore[assignment]
+    coordinator.device = device
+    coordinator._consecutive_timeouts = 0
+    coordinator._consecutive_failures = {}
+    coordinator._cycle = 0
+    coordinator._force_slow_tier = False
+    # Coordinator __init__ logic
+    from custom_components.sofar_modbus.coordinator import _volatile_components
+    volatile = _volatile_components()
+    coordinator._fast = {name: getattr(device, name) for name in device._polled if name in volatile}
+    coordinator._slow = {name: getattr(device, name) for name in device._polled if name not in volatile}
+
+    assert "grid" in coordinator.served_components
+    assert "energy" in coordinator.served_components
+    assert "feed_in" in coordinator.served_components
+
+    # First update polls only fast tier without ever reading serial register 0x0445
+    report = await coordinator._async_update_data()
+    assert report.complete
+    assert "grid" in report.updated
+    assert "state" in report.updated
+    assert 0x0445 not in unit.read_events
+    print("pre-identified-device-initializes-tiers-in-memory: PASSED")
+
+
 async def main() -> None:
     await test_retry_recovers_a_transient_failure()
     await test_a_failure_that_survives_retry_is_tracked_and_leaves_others_alone()
@@ -278,6 +324,7 @@ async def main() -> None:
     await test_all_timeout_outage_raises_update_failed_and_skips_retry()
     await test_refusal_on_first_component_is_contained()
     await test_first_poll_only_polls_fast_tier_and_exposes_all_served_components()
+    await test_pre_identified_device_initializes_tiers_in_memory()
     print("ALL COORDINATOR TESTS PASSED")
 
 
