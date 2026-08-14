@@ -55,6 +55,7 @@ def _coordinator(device: SofarInverter, connection: _FakeConnection) -> SofarDat
     coordinator._cycle = 0
     coordinator._fast = None
     coordinator._slow = None
+    coordinator._force_slow_tier = False
     return coordinator
 
 
@@ -75,6 +76,8 @@ async def test_retry_recovers_a_transient_failure() -> None:
     assert report.complete, f"first poll should be clean against the mock: {report.failed}"
     assert coordinator._fast is not None and "grid" in coordinator._fast
     assert coordinator._slow is not None and "energy" in coordinator._slow
+    assert "feed_in" in coordinator._slow
+    assert "remote" in coordinator._slow
 
     unit.fail_read(0x0484, ModbusTimeoutError("transient"))
     first_attempt = await coordinator._poll(coordinator._fast)
@@ -152,12 +155,48 @@ async def test_a_dead_link_raises_update_failed() -> None:
     print("dead-link-raises-update-failed: PASSED")
 
 
+async def test_all_timeout_outage_raises_update_failed_and_skips_retry() -> None:
+    unit = MockModbusConnection().for_unit(1)
+    device = _device(unit)
+    coordinator = _coordinator(device, _FakeConnection())
+    await coordinator._async_update_data()
+
+    unit.fail_requests(ModbusTimeoutError("stuck"))
+    try:
+        await coordinator._async_update_data()
+    except UpdateFailed as err:
+        assert "no component answered" in str(err)
+    else:
+        raise AssertionError("expected UpdateFailed when all components time out")
+    print("all-timeout-outage-raises-update-failed: PASSED")
+
+
+async def test_force_slow_tier_polls_slow_tier_on_off_cycles() -> None:
+    unit = MockModbusConnection().for_unit(1)
+    device = _device(unit)
+    coordinator = _coordinator(device, _FakeConnection())
+    await coordinator._async_update_data()  # settles tiers, cycle 0 done (next cycle is 1, not due)
+
+    # Next cycle is off-cycle (cycle 1, N=4)
+    coordinator._force_slow_tier = True
+    report = await coordinator._async_update_data()
+    assert "energy" in report.updated, "slow tier should poll when forced"
+    assert not coordinator._force_slow_tier, "force flag should reset after the poll"
+
+    # Cycle 2 without force should skip slow tier
+    report = await coordinator._async_update_data()
+    assert "energy" not in report.updated, "slow tier should be skipped again when not forced"
+    print("force-slow-tier-polls-slow-tier-on-off-cycles: PASSED")
+
+
 async def main() -> None:
     await test_retry_recovers_a_transient_failure()
     await test_a_failure_that_survives_retry_is_tracked_and_leaves_others_alone()
     await test_disconnects_after_repeated_timeouts()
     await test_slow_tier_is_skipped_on_off_cycles()
+    await test_force_slow_tier_polls_slow_tier_on_off_cycles()
     await test_a_dead_link_raises_update_failed()
+    await test_all_timeout_outage_raises_update_failed_and_skips_retry()
     print("ALL COORDINATOR TESTS PASSED")
 
 

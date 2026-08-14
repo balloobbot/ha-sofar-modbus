@@ -57,12 +57,15 @@ _SLOW_TIER_EVERY_N_CYCLES = 4  # ~60s at the 15s base scan interval
 type SofarConfigEntry = ConfigEntry[SofarDataUpdateCoordinator]
 
 
-def _slow_tier_components() -> frozenset[str]:
-    """Component names with no 'measurement' row — settings, counters, identity.
+def _volatile_components() -> frozenset[str]:
+    """Component names with at least one 'measurement' row.
 
     Derived from sensor.py's own SENSOR_DESCRIPTIONS state_class metadata
     rather than a separately hand-maintained list, so there's one source of
     truth for what changes often enough to need every-cycle freshness.
+    Components with only counters/settings or no sensor rows at all (write-only
+    components like feed_in, active_power_control, passive, charger, remote)
+    join the slow tier.
     Imported here, not at module level: sensor.py imports SofarConfigEntry
     from this module, so a module-level import back would be circular — this
     one only runs when a poll actually needs it, well after both modules have
@@ -70,11 +73,11 @@ def _slow_tier_components() -> frozenset[str]:
     """
     from .sensor import SENSOR_DESCRIPTIONS
 
-    all_components = {description.component for description in SENSOR_DESCRIPTIONS}
-    volatile = {
-        description.component for description in SENSOR_DESCRIPTIONS if description.state_class == SensorStateClass.MEASUREMENT
-    }
-    return frozenset(all_components - volatile)
+    return frozenset(
+        description.component
+        for description in SENSOR_DESCRIPTIONS
+        if description.state_class == SensorStateClass.MEASUREMENT
+    )
 
 
 class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
@@ -102,6 +105,7 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
         self._cycle = 0
         self._fast: dict[str, SofarComponentBase] | None = None
         self._slow: dict[str, SofarComponentBase] | None = None
+        self._force_slow_tier = False
         self.pending: dict[str, Any] = {}
 
     def pending_or_live(self, key: str, live_value: Any) -> Any:
@@ -115,6 +119,10 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
         """
         return self.pending.get(key, live_value)
 
+    async def async_request_refresh(self) -> None:
+        self._force_slow_tier = True
+        await super().async_request_refresh()
+
     async def _async_update_data(self) -> UpdateReport:
         try:
             if self._fast is None:
@@ -122,7 +130,12 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
             else:
                 report = await self._poll(self._components_due())
             self._cycle += 1
-            return await self._retry_failed(report)
+            report = await self._retry_failed(report)
+            if not report.updated:
+                errors = list(report.failed.values())
+                cause = errors[0] if len(errors) == 1 else ExceptionGroup("all components failed to refresh", errors)
+                raise UpdateFailed(f"{self.name}: no component answered: {errors[0]}") from cause
+            return report
         except ModbusError as err:
             # In practice only ModbusConnectionError reaches here — a dead
             # link, not a single bad block, which the poll already contains
@@ -135,17 +148,18 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
         """
         report = await self.device.async_update()
         served = report.updated | set(report.failed)
-        slow_names = _slow_tier_components() & served
-        self._slow = {name: getattr(self.device, name) for name in slow_names}
-        self._fast = {name: getattr(self.device, name) for name in served - slow_names}
+        fast_names = _volatile_components() & served
+        self._fast = {name: getattr(self.device, name) for name in fast_names}
+        self._slow = {name: getattr(self.device, name) for name in served - fast_names}
         return report
 
     def _components_due(self) -> dict[str, SofarComponentBase]:
         assert self._fast is not None
         components = dict(self._fast)
-        if self._cycle % _SLOW_TIER_EVERY_N_CYCLES == 0:
+        if self._force_slow_tier or self._cycle % _SLOW_TIER_EVERY_N_CYCLES == 0:
             assert self._slow is not None
             components.update(self._slow)
+            self._force_slow_tier = False
         return components
 
     async def _poll(self, components: dict[str, SofarComponentBase]) -> UpdateReport:
@@ -164,8 +178,12 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
         return UpdateReport(updated, failed)
 
     async def _retry_failed(self, report: UpdateReport) -> UpdateReport:
-        """Give every failed component one more try before accepting the failure."""
-        if report.failed:
+        """Give every failed component one more try before accepting the failure.
+
+        Skipped when nothing answered on the first pass (e.g. an all-timeout
+        outage) to avoid doubling the timeout latency when the link is down.
+        """
+        if report.failed and report.updated:
             retry = await self._poll({name: getattr(self.device, name) for name in report.failed})
             report = UpdateReport(report.updated | retry.updated, retry.failed)
 
@@ -183,14 +201,15 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
             self._consecutive_timeouts = 0
 
         for name, cause in report.failed.items():
-            self._consecutive_failures[name] = self._consecutive_failures.get(name, 0) + 1
-            _LOGGER.debug(
-                "%s: %s did not refresh this poll even after a retry, keeping its previous values (%d consecutive failures): %s",
-                self.name,
-                name,
-                self._consecutive_failures[name],
-                cause,
-            )
+            prev = self._consecutive_failures.get(name, 0)
+            self._consecutive_failures[name] = prev + 1
+            if prev == 0:
+                _LOGGER.warning(
+                    "%s: %s failed to refresh and is keeping its previous values: %s",
+                    self.name,
+                    name,
+                    cause,
+                )
         for name in report.updated:
             self._consecutive_failures.pop(name, None)
 
