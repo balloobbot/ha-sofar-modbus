@@ -152,12 +152,29 @@ async def test_a_dead_link_raises_update_failed() -> None:
     print("dead-link-raises-update-failed: PASSED")
 
 
+async def test_all_timeout_outage_raises_update_failed_and_skips_retry() -> None:
+    unit = MockModbusConnection().for_unit(1)
+    device = _device(unit)
+    coordinator = _coordinator(device, _FakeConnection())
+    await coordinator._async_update_data()
+
+    unit.fail_requests(ModbusTimeoutError("stuck"))
+    try:
+        await coordinator._async_update_data()
+    except UpdateFailed as err:
+        assert "no component answered" in str(err)
+    else:
+        raise AssertionError("expected UpdateFailed when all components time out")
+    print("all-timeout-outage-raises-update-failed: PASSED")
+
+
 async def main() -> None:
     await test_retry_recovers_a_transient_failure()
     await test_a_failure_that_survives_retry_is_tracked_and_leaves_others_alone()
     await test_disconnects_after_repeated_timeouts()
     await test_slow_tier_is_skipped_on_off_cycles()
     await test_a_dead_link_raises_update_failed()
+    await test_all_timeout_outage_raises_update_failed_and_skips_retry()
     print("ALL COORDINATOR TESTS PASSED")
 
 

@@ -122,7 +122,12 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
             else:
                 report = await self._poll(self._components_due())
             self._cycle += 1
-            return await self._retry_failed(report)
+            report = await self._retry_failed(report)
+            if not report.updated:
+                errors = list(report.failed.values())
+                cause = errors[0] if len(errors) == 1 else ExceptionGroup("all components failed to refresh", errors)
+                raise UpdateFailed(f"{self.name}: no component answered: {errors[0]}") from cause
+            return report
         except ModbusError as err:
             # In practice only ModbusConnectionError reaches here — a dead
             # link, not a single bad block, which the poll already contains
@@ -164,8 +169,12 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
         return UpdateReport(updated, failed)
 
     async def _retry_failed(self, report: UpdateReport) -> UpdateReport:
-        """Give every failed component one more try before accepting the failure."""
-        if report.failed:
+        """Give every failed component one more try before accepting the failure.
+
+        Skipped when nothing answered on the first pass (e.g. an all-timeout
+        outage) to avoid doubling the timeout latency when the link is down.
+        """
+        if report.failed and report.updated:
             retry = await self._poll({name: getattr(self.device, name) for name in report.failed})
             report = UpdateReport(report.updated | retry.updated, retry.failed)
 
