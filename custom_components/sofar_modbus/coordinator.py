@@ -158,7 +158,7 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
         except ModbusTimeoutError as err:
             self._consecutive_timeouts += 1
             if self._consecutive_timeouts >= _TIMEOUT_DISCONNECT_THRESHOLD:
-                _LOGGER.warning(
+                _LOGGER.debug(
                     "%s: %d consecutive timed-out polls, recycling the connection",
                     self.name,
                     self._consecutive_timeouts,
