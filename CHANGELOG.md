@@ -9,6 +9,16 @@ and GitHub Release.
 
 ## [Unreleased]
 
+## [0.3.9] - 2026-08-14
+
+### Fixed
+
+- Counted the wrong polls in `coordinator.py` for connection recycling: `_retry_failed` incremented `_consecutive_timeouts` on partial component failures where the link was demonstrably fine (recycling the connection every 3 polls on a slow register), while fatal timeouts where the whole link was wedged raised out of `_poll` and bypassed `_retry_failed` entirely. Timeout counting and threshold disconnects now trigger on fatal `ModbusTimeoutError` in `_async_update_data`, and `_consecutive_timeouts` is reset to 0 on any poll that succeeds (#26).
+
+### Verification
+
+- All standalone test suites (`test_smoke.py`, `test_coordinator.py`, `test_diagnostics.py`, `test_write_entities.py`), `pytest` (27 passed), `ruff` formatting/linting, and `mypy` checks pass.
+
 ## [0.3.8] - 2026-08-14
 
 ### Changed
