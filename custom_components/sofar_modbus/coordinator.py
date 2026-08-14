@@ -57,12 +57,15 @@ _SLOW_TIER_EVERY_N_CYCLES = 4  # ~60s at the 15s base scan interval
 type SofarConfigEntry = ConfigEntry[SofarDataUpdateCoordinator]
 
 
-def _slow_tier_components() -> frozenset[str]:
-    """Component names with no 'measurement' row — settings, counters, identity.
+def _volatile_components() -> frozenset[str]:
+    """Component names with at least one 'measurement' row.
 
     Derived from sensor.py's own SENSOR_DESCRIPTIONS state_class metadata
     rather than a separately hand-maintained list, so there's one source of
     truth for what changes often enough to need every-cycle freshness.
+    Components with only counters/settings or no sensor rows at all (write-only
+    components like feed_in, active_power_control, passive, charger, remote)
+    join the slow tier.
     Imported here, not at module level: sensor.py imports SofarConfigEntry
     from this module, so a module-level import back would be circular — this
     one only runs when a poll actually needs it, well after both modules have
@@ -70,11 +73,11 @@ def _slow_tier_components() -> frozenset[str]:
     """
     from .sensor import SENSOR_DESCRIPTIONS
 
-    all_components = {description.component for description in SENSOR_DESCRIPTIONS}
-    volatile = {
-        description.component for description in SENSOR_DESCRIPTIONS if description.state_class == SensorStateClass.MEASUREMENT
-    }
-    return frozenset(all_components - volatile)
+    return frozenset(
+        description.component
+        for description in SENSOR_DESCRIPTIONS
+        if description.state_class == SensorStateClass.MEASUREMENT
+    )
 
 
 class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
@@ -102,6 +105,7 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
         self._cycle = 0
         self._fast: dict[str, SofarComponentBase] | None = None
         self._slow: dict[str, SofarComponentBase] | None = None
+        self._force_slow_tier = False
         self.pending: dict[str, Any] = {}
 
     def pending_or_live(self, key: str, live_value: Any) -> Any:
@@ -114,6 +118,10 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
         to persist across a restart either.
         """
         return self.pending.get(key, live_value)
+
+    async def async_request_refresh(self) -> None:
+        self._force_slow_tier = True
+        await super().async_request_refresh()
 
     async def _async_update_data(self) -> UpdateReport:
         try:
@@ -140,17 +148,18 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
         """
         report = await self.device.async_update()
         served = report.updated | set(report.failed)
-        slow_names = _slow_tier_components() & served
-        self._slow = {name: getattr(self.device, name) for name in slow_names}
-        self._fast = {name: getattr(self.device, name) for name in served - slow_names}
+        fast_names = _volatile_components() & served
+        self._fast = {name: getattr(self.device, name) for name in fast_names}
+        self._slow = {name: getattr(self.device, name) for name in served - fast_names}
         return report
 
     def _components_due(self) -> dict[str, SofarComponentBase]:
         assert self._fast is not None
         components = dict(self._fast)
-        if self._cycle % _SLOW_TIER_EVERY_N_CYCLES == 0:
+        if self._force_slow_tier or self._cycle % _SLOW_TIER_EVERY_N_CYCLES == 0:
             assert self._slow is not None
             components.update(self._slow)
+            self._force_slow_tier = False
         return components
 
     async def _poll(self, components: dict[str, SofarComponentBase]) -> UpdateReport:
