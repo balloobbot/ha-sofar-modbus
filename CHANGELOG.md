@@ -9,6 +9,16 @@ and GitHub Release.
 
 ## [Unreleased]
 
+## [0.3.11] - 2026-08-14
+
+### Changed
+
+- Initial coordinator refresh (cycle 0) on startup now polls all served components for this inverter, populating identity diagnostics (serial number, firmware version) and controls (feed-in limit, active power control, remote switch, charger mode) immediately on boot with no 60-second delay. Subsequent cycles continue to poll the fast tier every 15s and slow tier every 60s.
+
+### Verification
+
+- All standalone test suites (`test_smoke.py`, `test_coordinator.py`, `test_diagnostics.py`, `test_write_entities.py`), `pytest` (28 passed), `ruff` formatting/linting, and `mypy` checks pass.
+
 ## [0.3.10] - 2026-08-14
 
 ### Changed
