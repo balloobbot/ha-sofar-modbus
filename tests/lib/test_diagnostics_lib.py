@@ -47,7 +47,7 @@ def _coordinator(device: SofarInverter) -> SofarDataUpdateCoordinator:
     coordinator._fast = None
     coordinator._slow = None
     coordinator._force_slow_tier = False
-    coordinator.data = None
+    coordinator.data = None  # type: ignore[assignment]
     return coordinator
 
 

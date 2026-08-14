@@ -253,12 +253,12 @@ async def test_first_poll_only_polls_fast_tier_and_exposes_all_served_components
     device = _device(unit)
     coordinator = _coordinator(device, _FakeConnection())
 
-    # Cycle 0 (startup): Fast tier + identity polled immediately
+    # Cycle 0 (startup): Fast tier polled immediately
     report = await coordinator._async_update_data()
     assert report.complete
     assert "grid" in report.updated
     assert "state" in report.updated
-    assert "identity" in report.updated
+    assert "identity" not in report.updated
     assert "energy" not in report.updated
     assert "grid" in coordinator.served_components
     assert "energy" in coordinator.served_components
@@ -282,9 +282,8 @@ async def test_pre_identified_device_initializes_tiers_in_memory() -> None:
     device = SofarInverter(unit, inverter_type=inverter_type)
     device.serial_number = serial
     device.model = model
-    device._polled = [
-        name for name in _POLLED if matches(device.inverter_type, getattr(device, name).applies_to)
-    ]
+    assert device.inverter_type is not None
+    device._polled = [name for name in _POLLED if matches(device.inverter_type, getattr(device, name).applies_to)]
 
     # Seed fast tier registers
     unit.holding[0x0404] = 2
@@ -300,6 +299,7 @@ async def test_pre_identified_device_initializes_tiers_in_memory() -> None:
     coordinator._force_slow_tier = False
     # Coordinator __init__ logic
     from custom_components.sofar_modbus.coordinator import _volatile_components
+
     volatile = _volatile_components()
     coordinator._fast = {name: getattr(device, name) for name in device._polled if name in volatile}
     coordinator._slow = {name: getattr(device, name) for name in device._polled if name not in volatile}
@@ -313,7 +313,7 @@ async def test_pre_identified_device_initializes_tiers_in_memory() -> None:
     assert report.complete
     assert "grid" in report.updated
     assert "state" in report.updated
-    assert 0x0445 not in unit.read_events
+    assert 0x0445 not in [e.address for e in unit.read_events]
     print("pre-identified-device-initializes-tiers-in-memory: PASSED")
 
 

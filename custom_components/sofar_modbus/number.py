@@ -48,7 +48,7 @@ class FeedInMaxPowerNumber(SofarEntity, NumberEntity):
     staged when the button is pressed.
     """
 
-    _attr_name = "FeedIn: Maximum Power"
+    _attr_translation_key = "feedin_max_power"
     _attr_native_unit_of_measurement = UnitOfPower.WATT
     _attr_native_min_value = 0
     _attr_native_max_value = 20000
@@ -71,7 +71,7 @@ class FeedInMaxPowerNumber(SofarEntity, NumberEntity):
 class ActivePowerExportLimitNumber(SofarEntity, NumberEntity):
     """Active Power Control: Export Limit — staged; press Update to apply."""
 
-    _attr_name = "Active Power Control: Export Limit"
+    _attr_translation_key = "active_power_export_limit"
     _attr_native_unit_of_measurement = PERCENTAGE
     _attr_native_min_value = 0
     _attr_native_max_value = 100
@@ -98,7 +98,7 @@ class PassiveTimeoutNumber(SofarEntity, NumberEntity):
     device's own bounds for the field.
     """
 
-    _attr_name = "Passive: Timeout"
+    _attr_translation_key = "passive_mode_timeout"
     _attr_native_unit_of_measurement = UnitOfTime.SECONDS
     _attr_native_min_value = 0
     _attr_native_max_value = 65535
@@ -125,7 +125,7 @@ class PassiveGridPowerNumber(SofarEntity, NumberEntity):
     below — the three go out together via ``async_write_power``.
     """
 
-    _attr_name = "Passive: Desired Grid Power"
+    _attr_translation_key = "passive_mode_grid_power"
     _attr_native_unit_of_measurement = UnitOfPower.WATT
     _attr_native_min_value = -20000
     _attr_native_max_value = 20000
@@ -148,7 +148,7 @@ class PassiveGridPowerNumber(SofarEntity, NumberEntity):
 class PassiveBatteryPowerMinNumber(SofarEntity, NumberEntity):
     """Passive: Minimum Battery Power — staged; press Passive: Power Update to apply."""
 
-    _attr_name = "Passive: Minimum Battery Power"
+    _attr_translation_key = "passive_mode_battery_power_min"
     _attr_native_unit_of_measurement = UnitOfPower.WATT
     _attr_native_min_value = -20000
     _attr_native_max_value = 20000
@@ -171,7 +171,7 @@ class PassiveBatteryPowerMinNumber(SofarEntity, NumberEntity):
 class PassiveBatteryPowerMaxNumber(SofarEntity, NumberEntity):
     """Passive: Maximum Battery Power — staged; press Passive: Power Update to apply."""
 
-    _attr_name = "Passive: Maximum Battery Power"
+    _attr_translation_key = "passive_mode_battery_power_max"
     _attr_native_unit_of_measurement = UnitOfPower.WATT
     _attr_native_min_value = -20000
     _attr_native_max_value = 20000

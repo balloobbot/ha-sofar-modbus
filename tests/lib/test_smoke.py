@@ -13,6 +13,7 @@ import asyncio
 import sys
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 # sensor.py has package-relative imports (.coordinator, .entity), so unlike
 # the old standalone generated_sensors.py it can't be loaded as a bare
@@ -178,13 +179,13 @@ async def _check_total_increasing_holds_available_through_failed_poll() -> None:
     energy_description = next(d for d in SENSOR_DESCRIPTIONS if d.key == "load_consumption_total")
     grid_description = next(d for d in SENSOR_DESCRIPTIONS if d.key == "grid_frequency")
 
-    def _coordinator(current_report: object) -> object:
+    def _coordinator(current_report: object) -> Any:
         return SimpleNamespace(
             device=device, config_entry=SimpleNamespace(title="Test Sofar"), data=current_report, last_update_success=True
         )
 
-    energy_entity = SofarTotalSensor(_coordinator(report), energy_description)  # type: ignore[arg-type]
-    grid_entity = SofarSensor(_coordinator(report), grid_description)  # type: ignore[arg-type]
+    energy_entity = SofarTotalSensor(_coordinator(report), energy_description)
+    grid_entity = SofarSensor(_coordinator(report), grid_description)
     assert energy_entity.available and grid_entity.available, "both should be available after a clean poll"
     held_value = energy_entity.native_value
 
@@ -195,7 +196,7 @@ async def _check_total_increasing_holds_available_through_failed_poll() -> None:
     assert "energy" in energy_failed_report.failed, f"expected energy to fail this poll: {energy_failed_report.updated}"
     unit.fail_read(0x0684, None)  # clear it before the next poll
 
-    energy_entity = SofarTotalSensor(_coordinator(energy_failed_report), energy_description)  # type: ignore[arg-type]
+    energy_entity = SofarTotalSensor(_coordinator(energy_failed_report), energy_description)
     assert energy_entity.available, "a total_increasing sensor must hold available through its own component's failure"
     assert energy_entity.native_value == held_value, "it must keep reporting the last known value, not go blank"
 
@@ -203,23 +204,16 @@ async def _check_total_increasing_holds_available_through_failed_poll() -> None:
     grid_failed_report = await device.async_update()
     assert "grid" in grid_failed_report.failed, f"expected grid to fail this poll: {grid_failed_report.updated}"
 
-    grid_entity = SofarSensor(_coordinator(grid_failed_report), grid_description)  # type: ignore[arg-type]
+    grid_entity = SofarSensor(_coordinator(grid_failed_report), grid_description)
     assert not grid_entity.available, "a plain measurement sensor must still go unavailable on its own component's failed poll"
 
-    dead_link_entity = SofarTotalSensor(
-        SimpleNamespace(
-            device=device, config_entry=SimpleNamespace(title="Test Sofar"), data=energy_failed_report, last_update_success=False
-        ),
-        energy_description,
-    )  # type: ignore[arg-type]
+    dead_link_coord: Any = SimpleNamespace(
+        device=device, config_entry=SimpleNamespace(title="Test Sofar"), data=energy_failed_report, last_update_success=False
+    )
+    dead_link_entity = SofarTotalSensor(dead_link_coord, energy_description)
     assert dead_link_entity.available, "total_increasing must hold available even when the link is down"
 
-    dead_link_grid_entity = SofarSensor(
-        SimpleNamespace(
-            device=device, config_entry=SimpleNamespace(title="Test Sofar"), data=energy_failed_report, last_update_success=False
-        ),
-        grid_description,
-    )  # type: ignore[arg-type]
+    dead_link_grid_entity = SofarSensor(dead_link_coord, grid_description)
     assert not dead_link_grid_entity.available, "a measurement sensor must go unavailable when the link is down"
     print("total-increasing-holds-available-through-failed-poll: PASSED")
 
@@ -230,17 +224,20 @@ async def _check_total_sensor_restores_state_and_seeds_high_water() -> None:
     device = SofarInverter(unit)
     await device.async_setup()
 
-    coordinator = SimpleNamespace(
+    coordinator: Any = SimpleNamespace(
         device=device,
         config_entry=SimpleNamespace(title="Test Sofar"),
         async_add_listener=lambda *args, **kwargs: lambda: None,
     )
     description = next(d for d in SENSOR_DESCRIPTIONS if d.key == "load_consumption_total")
-    entity = SofarTotalSensor(coordinator, description)  # type: ignore[arg-type]
+    entity = SofarTotalSensor(coordinator, description)
     entity.async_on_remove = lambda *args, **kwargs: None  # type: ignore[method-assign]
 
     # Mock async_get_last_sensor_data
-    entity.async_get_last_sensor_data = lambda: asyncio.sleep(0, result=SimpleNamespace(native_value="1234.5"))  # type: ignore[method-assign]
+    async def _mock_last_sensor_data() -> Any:
+        return SimpleNamespace(native_value="1234.5")
+
+    entity.async_get_last_sensor_data = _mock_last_sensor_data  # type: ignore[method-assign]
     await entity.async_added_to_hass()
 
     assert entity.native_value == 1234.5, f"expected restored 1234.5, got {entity.native_value!r}"

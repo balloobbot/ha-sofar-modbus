@@ -58,13 +58,11 @@ type SofarConfigEntry = ConfigEntry[SofarDataUpdateCoordinator]
 
 
 def _volatile_components() -> frozenset[str]:
-    """Component names with at least one 'measurement' row, plus 'identity'.
+    """Component names with at least one 'measurement' row.
 
     Derived from sensor.py's own SENSOR_DESCRIPTIONS state_class metadata
     rather than a separately hand-maintained list, so there's one source of
     truth for what changes often enough to need every-cycle freshness.
-    'identity' is included so serial number and software versions are known
-    immediately on startup without delay.
     Components with only counters/settings or no sensor rows at all (write-only
     components like feed_in, active_power_control, passive, charger, remote)
     join the slow tier.
@@ -76,12 +74,7 @@ def _volatile_components() -> frozenset[str]:
     from .sensor import SENSOR_DESCRIPTIONS
 
     return frozenset(
-        {
-            description.component
-            for description in SENSOR_DESCRIPTIONS
-            if description.state_class == SensorStateClass.MEASUREMENT
-        }
-        | {"identity"}
+        description.component for description in SENSOR_DESCRIPTIONS if description.state_class == SensorStateClass.MEASUREMENT
     )
 
 
@@ -156,6 +149,8 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
             report = await self._retry_failed(report)
             if not report.updated:
                 errors = list(report.failed.values())
+                if not errors:
+                    raise UpdateFailed(f"{self.name}: no component answered")
                 cause = errors[0] if len(errors) == 1 else ExceptionGroup("all components failed to refresh", errors)
                 raise UpdateFailed(f"{self.name}: no component answered: {errors[0]}") from cause
             self._consecutive_timeouts = 0
@@ -183,6 +178,8 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
         if self._fast is None:
             if self.device._polled is None:
                 await self.device.async_setup()
+            if not self.device.inverter_type:
+                return UpdateReport(updated={"identity"}, failed={})
             volatile = _volatile_components()
             polled = self.device._polled or ()
             self._fast = {name: getattr(self.device, name) for name in polled if name in volatile}
@@ -230,7 +227,6 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
                 allow_fatal_timeout=False,
             )
             report = UpdateReport(report.updated | retry.updated, retry.failed)
-
 
         for name, cause in report.failed.items():
             prev = self._consecutive_failures.get(name, 0)

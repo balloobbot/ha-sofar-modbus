@@ -72,3 +72,31 @@ class SofarConfigFlow(ConfigFlow, domain=DOMAIN):
                 return self.async_create_entry(title=title, data=user_input)
 
         return self.async_show_form(step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=errors)
+
+    async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Handle reconfiguration of the inverter connection."""
+        errors: dict[str, str] = {}
+        entry = self._get_reconfigure_entry()
+
+        if user_input is not None:
+            reconfig_data = {**entry.data, **user_input}
+            try:
+                serial, _ = await _async_probe(reconfig_data)
+            except ModbusError:
+                errors["base"] = "cannot_connect"
+            except SofarUnrecognizedError:
+                errors["base"] = "unrecognized_inverter"
+            else:
+                await self.async_set_unique_id(serial)
+                self._abort_if_unique_id_mismatch(reason="different_serial")
+                return self.async_update_reload_and_abort(entry, data=reconfig_data)
+
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_HOST, default=entry.data.get(CONF_HOST)): str,
+                vol.Required(CONF_PORT, default=entry.data.get(CONF_PORT, DEFAULT_PORT)): int,
+                vol.Optional(CONF_MODBUS_ADDR, default=entry.data.get(CONF_MODBUS_ADDR, DEFAULT_MODBUS_ADDR)): int,
+                vol.Optional(CONF_READ_EPS, default=entry.data.get(CONF_READ_EPS, False)): bool,
+            }
+        )
+        return self.async_show_form(step_id="reconfigure", data_schema=schema, errors=errors)

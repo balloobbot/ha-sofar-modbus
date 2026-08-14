@@ -78,7 +78,7 @@ class RemoteSwitchSelect(SofarEntity, SelectEntity):
     """Remote Switch On Off — a plain single-register write, applied immediately."""
 
     _attr_options = list(_REMOTE_SWITCH_OPTIONS.values())
-    _attr_name = "Remote Switch On Off"
+    _attr_translation_key = "remote_switch_on_off"
 
     def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
         super().__init__(coordinator, "remote_switch_on_off", "remote")
@@ -101,7 +101,7 @@ class FeedInLimitationModeSelect(SofarEntity, SelectEntity):
     """FeedIn: Limitation Mode — staged; press FeedIn: Update to apply."""
 
     _attr_options = list(_FEEDIN_LIMITATION_OPTIONS.values())
-    _attr_name = "FeedIn: Limitation Mode"
+    _attr_translation_key = "feedin_limitation_mode"
 
     def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
         super().__init__(coordinator, "feedin_limitation_mode", "feed_in")
@@ -122,7 +122,7 @@ class ChargerUseModeSelect(SofarEntity, SelectEntity):
     """Charger Use Mode — a plain single-register write, applied immediately."""
 
     _attr_options = list(_CHARGER_USE_MODE_OPTIONS.values())
-    _attr_name = "Charger Use Mode"
+    _attr_translation_key = "charger_use_mode"
 
     def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
         super().__init__(coordinator, "charger_use_mode", "charger")
@@ -150,7 +150,7 @@ class EpsModeSelect(SofarEntity, SelectEntity):
     """
 
     _attr_options = list(_EPS_MODE_OPTIONS.values())
-    _attr_name = "EPS Mode"
+    _attr_translation_key = "eps_control"
 
     def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
         super().__init__(coordinator, "eps_control", "eps")
@@ -173,7 +173,7 @@ class PassiveTimeoutActionSelect(SofarEntity, SelectEntity):
     """Passive: Timeout Action — staged; press Passive: Timeout Update to apply."""
 
     _attr_options = list(_PASSIVE_TIMEOUT_ACTION_OPTIONS.values())
-    _attr_name = "Passive: Timeout Action"
+    _attr_translation_key = "passive_mode_timeout_action"
 
     def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
         super().__init__(coordinator, "passive_mode_timeout_action", "passive")

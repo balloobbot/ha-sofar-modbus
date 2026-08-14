@@ -28,14 +28,13 @@ jobs:
         run: uv sync --locked --group test --group dev
 
       - name: Lint with Ruff
-        run: uv run ruff check .
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
 
       - name: Type check with mypy
-        run: uv run mypy custom_components/sofar_modbus
+        run: uv run mypy --explicit-package-bases custom_components/ tests/
 
       - name: Run Test Suite
-        run: |
-          uv run python tests/lib/test_smoke.py
-          uv run python tests/lib/test_coordinator.py
-          uv run python tests/lib/test_diagnostics.py
-          uv run python tests/lib/test_write_entities.py
+        run: uv run pytest
+
