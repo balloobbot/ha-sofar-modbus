@@ -9,6 +9,25 @@ and GitHub Release.
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-08-14
+
+### Changed
+
+- Updated `sofar-modbus` requirement to `0.1.5` and bumped `modbus-connection[tmodbus]` floor to `>=4.7.0,<5.0.0` (#6).
+- `diagnostics.py` now uses the library's built-in `SofarInverter.async_read_raw()` with `notify=False` rather than hand-iterating components (#3).
+- Polling failure logging in `coordinator.py` now emits a `WARNING` only on the initial transition into component failure, suppressing poll spam on subsequent cycles (#7).
+- Grouped write/settings components (`feed_in`, `active_power_control`, `passive`, `charger`, `remote`, `eps`) into the slow polling tier, and ensured `async_request_refresh()` immediately polls the slow tier to confirm writes (#5).
+
+### Fixed
+
+- Handled all-timeout outages in `coordinator.py` by raising `UpdateFailed` when no components answer, and skipping retry passes when the first pass had zero responses to prevent doubled timeout latency (#2).
+- `TOTAL` and `TOTAL_INCREASING` energy sensors now hold `available = True` unconditionally even through complete link dropouts or nighttime power-downs to avoid gaps in long-term statistics (#1).
+- Split totals out into `SofarTotalSensor(RestoreSensor)`, restoring last known sensor data across Home Assistant restarts and seeding the high-water mark for torn-read dip protection immediately (#4).
+
+### Verification
+
+- All standalone test suites (`test_smoke.py`, `test_coordinator.py`, `test_diagnostics.py`, `test_write_entities.py`) and `ruff` lint checks pass.
+
 ## [0.3.4] - 2026-08-14
 
 ### Changed
