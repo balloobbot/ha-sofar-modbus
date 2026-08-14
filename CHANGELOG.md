@@ -11,13 +11,17 @@ and GitHub Release.
 
 ## [0.3.9] - 2026-08-14
 
+### Changed
+
+- Inverter identity (serial number, model, inverter type) is now initialized in-memory directly from `entry.unique_id` on startup (0ms, zero I/O), allowing coordinator fast/slow tiers and entity platforms to settle immediately before polling starts.
+
 ### Fixed
 
 - Counted the wrong polls in `coordinator.py` for connection recycling: `_retry_failed` incremented `_consecutive_timeouts` on partial component failures where the link was demonstrably fine (recycling the connection every 3 polls on a slow register), while fatal timeouts where the whole link was wedged raised out of `_poll` and bypassed `_retry_failed` entirely. Timeout counting and threshold disconnects now trigger on fatal `ModbusTimeoutError` in `_async_update_data`, and `_consecutive_timeouts` is reset to 0 on any poll that succeeds (#26).
 
 ### Verification
 
-- All standalone test suites (`test_smoke.py`, `test_coordinator.py`, `test_diagnostics.py`, `test_write_entities.py`), `pytest` (27 passed), `ruff` formatting/linting, and `mypy` checks pass.
+- All standalone test suites (`test_smoke.py`, `test_coordinator.py`, `test_diagnostics.py`, `test_write_entities.py`), `pytest` (28 passed), `ruff` formatting/linting, and `mypy` checks pass.
 
 ## [0.3.8] - 2026-08-14
 
