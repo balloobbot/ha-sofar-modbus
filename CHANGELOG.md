@@ -9,11 +9,17 @@ and GitHub Release.
 
 ## [Unreleased]
 
-## [0.3.9] - 2026-08-14
+## [0.3.10] - 2026-08-14
 
 ### Changed
 
-- Inverter identity (serial number, model, inverter type) is now initialized in-memory directly from `entry.unique_id` on startup (0ms, zero I/O), allowing coordinator fast/slow tiers and entity platforms to settle immediately before polling starts.
+- Inverter identity (serial number, model, inverter type) is now initialized in-memory directly from `entry.unique_id` on startup (0ms, zero I/O), allowing coordinator fast/slow tiers and entity platforms to settle immediately before polling starts (#30).
+
+### Verification
+
+- All standalone test suites (`test_smoke.py`, `test_coordinator.py`, `test_diagnostics.py`, `test_write_entities.py`), `pytest` (28 passed), `ruff` formatting/linting, and `mypy` checks pass.
+
+## [0.3.9] - 2026-08-14
 
 ### Fixed
 
@@ -21,7 +27,7 @@ and GitHub Release.
 
 ### Verification
 
-- All standalone test suites (`test_smoke.py`, `test_coordinator.py`, `test_diagnostics.py`, `test_write_entities.py`), `pytest` (28 passed), `ruff` formatting/linting, and `mypy` checks pass.
+- All standalone test suites (`test_smoke.py`, `test_coordinator.py`, `test_diagnostics.py`, `test_write_entities.py`), `pytest` (27 passed), `ruff` formatting/linting, and `mypy` checks pass.
 
 ## [0.3.8] - 2026-08-14
 
