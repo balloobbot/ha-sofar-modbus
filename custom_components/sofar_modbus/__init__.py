@@ -39,24 +39,38 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry) -> boo
         device._polled = [name for name in _POLLED if matches(device.inverter_type, getattr(device, name).applies_to)]
 
     coordinator = SofarDataUpdateCoordinator(hass, entry, connection, device, DEFAULT_SCAN_INTERVAL)
-    # The coordinator's first refresh polls the fast tier + identity for rapid startup (<1s);
-    # ModbusError maps to ConfigEntryNotReady via first_refresh's own handling, but an
-    # unrecognized serial doesn't raise on its own (sofar_modbus leaves
-    # inverter_type at zero), so that still needs an explicit check.
-    await coordinator.async_config_entry_first_refresh()
+
     if not device.inverter_type:
-        raise ConfigEntryNotReady(f"Unrecognized Sofar inverter model for {entry.title}")
+        # Fallback for entries where inverter type could not be determined in-memory:
+        # poll the device to discover its identity block.
+        await coordinator.async_config_entry_first_refresh()
+        if not device.inverter_type:
+            raise ConfigEntryNotReady(f"Unrecognized Sofar inverter model for {entry.title}")
 
     entry.runtime_data = coordinator
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    # Immediately schedule a non-blocking background task to refresh the slow tier (controls, settings, energy totals)
-    entry.async_create_background_task(
-        hass,
-        coordinator.async_refresh_slow_tier(),
-        name=f"{DOMAIN}_{entry.unique_id}_initial_slow_refresh",
-    )
+    # Schedule background refresh:
+    # If pre-identified, both fast tier and slow tier refresh in the background.
+    # Otherwise, the fast tier was already refreshed by async_config_entry_first_refresh.
+    if serial and inverter_type:
+
+        async def _async_startup_refresh() -> None:
+            await coordinator.async_refresh()
+            await coordinator.async_refresh_slow_tier()
+
+        entry.async_create_background_task(
+            hass,
+            _async_startup_refresh(),
+            name=f"{DOMAIN}_{entry.unique_id}_startup_refresh",
+        )
+    else:
+        entry.async_create_background_task(
+            hass,
+            coordinator.async_refresh_slow_tier(),
+            name=f"{DOMAIN}_{entry.unique_id}_initial_slow_refresh",
+        )
     return True
 
 

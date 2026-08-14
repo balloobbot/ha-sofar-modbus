@@ -86,11 +86,34 @@ async def test_setup_entry_not_ready_on_unrecognized(hass: HomeAssistant) -> Non
 
 
 async def test_setup_entry_not_ready_on_connection_error(hass: HomeAssistant) -> None:
-    """Test ConfigEntryNotReady when initial poll fails due to Modbus error."""
+    """Test ConfigEntryNotReady when unique_id is missing and initial poll fails."""
     mock_conn = MockModbusConnection()
     unit = mock_conn.for_unit(1)
     _seed_pv_inverter(unit)
-    unit.fail_read(0x0404, ModbusConnectionError("Connection lost"))
+    unit.fail_read(0x0445, ModbusConnectionError("Connection lost"))
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id=None,
+        data=MOCK_CONFIG,
+        title="Sofar Inverter",
+    )
+    entry.add_to_hass(hass)
+
+    with patch("custom_components.sofar_modbus.build_connection", return_value=mock_conn):
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.SETUP_RETRY
+
+
+async def test_setup_entry_loads_offline_when_pre_identified(hass: HomeAssistant) -> None:
+    """Test entry successfully loads and registers entities even if inverter is offline at boot."""
+    mock_conn = MockModbusConnection()
+    unit = mock_conn.for_unit(1)
+    _seed_pv_inverter(unit)
+    # Simulate inverter sleeping / offline in the dark
+    unit.fail_read(0x0404, ModbusConnectionError("Inverter asleep in the dark"))
 
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -104,7 +127,8 @@ async def test_setup_entry_not_ready_on_connection_error(hass: HomeAssistant) ->
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-    assert entry.state is ConfigEntryState.SETUP_RETRY
+    assert entry.state is ConfigEntryState.LOADED
+    assert isinstance(entry.runtime_data, SofarDataUpdateCoordinator)
 
 
 async def test_setup_entry_without_pre_identified_serial(hass: HomeAssistant) -> None:
