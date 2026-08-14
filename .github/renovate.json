@@ -1,0 +1,60 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Renovate configuration for ha-sofar-modbus",
+  "extends": [
+    "config:recommended",
+    ":separateMajorReleases",
+    ":combinePatchMinorReleases",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "rebaseWhen": "conflicted",
+  "ignorePaths": [
+    "**/node_modules/**"
+  ],
+  "github-actions": {
+    "enabled": true
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": [
+      "before 5am on monday"
+    ]
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Home Assistant manifest.json requirements",
+      "managerFilePatterns": [
+        "/(^|/)custom_components/[^/]+/manifest\\.json$"
+      ],
+      "matchStrings": [
+        "\"(?<depName>[a-zA-Z0-9_-]+)(?:\\[[^\\]]+\\])?(?:>=|==)(?<currentValue>[^,\"]+)(?:,[^\"]*)?\""
+      ],
+      "datasourceTemplate": "pypi"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "GitHub Actions",
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "matchDepTypes": [
+        "dev",
+        "test"
+      ],
+      "groupName": "Dev & Test Dependencies",
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "matchPackageNames": [
+        "sofar-modbus",
+        "modbus-connection"
+      ],
+      "groupName": "Core Protocol Dependencies"
+    }
+  ]
+}
