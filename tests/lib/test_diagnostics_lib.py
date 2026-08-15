@@ -12,6 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from homeassistant.components.diagnostics import REDACTED  # noqa: E402
 from modbus_connection import ModbusTimeoutError  # noqa: E402
 from modbus_connection.mock import MockModbusConnection, MockModbusUnit  # noqa: E402
 from sofar_modbus.modern.device import SofarInverter  # noqa: E402
@@ -69,7 +70,8 @@ async def test_diagnostics_dumps_raw_registers_for_every_served_component() -> N
     diagnostics = await async_get_config_entry_diagnostics(None, _FakeEntry(coordinator))  # type: ignore[arg-type]
 
     assert diagnostics["model"] == device.model
-    assert diagnostics["serial_number"] == device.serial_number
+    assert diagnostics["serial_number"] == REDACTED
+    assert diagnostics["serial_prefix"] == "SP1XXES100"
     assert "grid" in diagnostics["served_components"]
     assert "energy" in diagnostics["served_components"]
     assert diagnostics["read_errors"] == {}
