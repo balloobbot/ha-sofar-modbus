@@ -71,19 +71,45 @@
         },
         "select": {
             "remote_switch_on_off": {
-                "name": "Remote switch"
+                "name": "Remote switch",
+                "state": {
+                    "off": "Off",
+                    "on": "On"
+                }
             },
             "feedin_limitation_mode": {
-                "name": "Feed-in limitation mode"
+                "name": "Feed-in limitation mode",
+                "state": {
+                    "disabled": "Disabled",
+                    "enabled_feed_in_limitation": "Enabled - Feed-in limitation",
+                    "enabled_3_phase_limit": "Enabled - 3-phase limit"
+                }
             },
             "charger_use_mode": {
-                "name": "Charger use mode"
+                "name": "Charger use mode",
+                "state": {
+                    "self_use": "Self Use",
+                    "time_of_use": "Time Of Use",
+                    "timing_mode": "Timing Mode",
+                    "passive_mode": "Passive Mode",
+                    "peak_cut_mode": "Peak Cut Mode",
+                    "off_grid_mode": "Off Grid Mode"
+                }
             },
             "eps_control": {
-                "name": "EPS mode"
+                "name": "EPS mode",
+                "state": {
+                    "turn_off": "Turn Off",
+                    "turn_on_prohibit_cold_start": "Turn On - Prohibit Cold Start",
+                    "turn_on_enable_cold_start": "Turn On - Enable Cold Start"
+                }
             },
             "passive_mode_timeout_action": {
-                "name": "Passive mode timeout action"
+                "name": "Passive mode timeout action",
+                "state": {
+                    "force_standby": "Force Standby",
+                    "return_to_previous_mode": "Return To Previous Mode"
+                }
             }
         },
         "switch": {

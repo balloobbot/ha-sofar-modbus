@@ -85,18 +85,18 @@ async def test_pv_controls_lifecycle(hass: HomeAssistant) -> None:
     remote_select_id = ent_reg.async_get_entity_id("select", DOMAIN, "SS2ES104N5S445_remote_switch_on_off")
     assert remote_select_id is not None
     assert (state := hass.states.get(remote_select_id)) is not None
-    assert state.state == "On"
+    assert state.state == "on"
 
     # Select Off
     await hass.services.async_call(
         "select",
         "select_option",
-        {"entity_id": remote_select_id, "option": "Off"},
+        {"entity_id": remote_select_id, "option": "off"},
         blocking=True,
     )
     assert unit.holding[0x1104] == 0
     assert (state := hass.states.get(remote_select_id)) is not None
-    assert state.state == "Off"
+    assert state.state == "off"
 
     # Test error handling on invalid option
     with pytest.raises(HomeAssistantError):
@@ -116,7 +116,7 @@ async def test_pv_controls_lifecycle(hass: HomeAssistant) -> None:
     assert feedin_max_power_id is not None
     assert feedin_button_id is not None
     assert (mode_state := hass.states.get(feedin_mode_id)) is not None
-    assert mode_state.state == "Disabled"
+    assert mode_state.state == "disabled"
     assert (power_state := hass.states.get(feedin_max_power_id)) is not None
     assert float(power_state.state) == 4400
 
@@ -124,7 +124,7 @@ async def test_pv_controls_lifecycle(hass: HomeAssistant) -> None:
     await hass.services.async_call(
         "select",
         "select_option",
-        {"entity_id": feedin_mode_id, "option": "Enabled - Feed-in limitation"},
+        {"entity_id": feedin_mode_id, "option": "enabled_feed_in_limitation"},
         blocking=True,
     )
     await hass.services.async_call(
@@ -237,12 +237,12 @@ async def test_hybrid_controls_lifecycle(hass: HomeAssistant) -> None:
     charger_select_id = ent_reg.async_get_entity_id("select", DOMAIN, "SP1XXES100XX_charger_use_mode")
     assert charger_select_id is not None
     assert (ch_state := hass.states.get(charger_select_id)) is not None
-    assert ch_state.state == "Time Of Use"
+    assert ch_state.state == "time_of_use"
 
     await hass.services.async_call(
         "select",
         "select_option",
-        {"entity_id": charger_select_id, "option": "Self Use"},
+        {"entity_id": charger_select_id, "option": "self_use"},
         blocking=True,
     )
     assert unit.holding[0x1110] == 0  # SELF_USE = 0
@@ -251,12 +251,12 @@ async def test_hybrid_controls_lifecycle(hass: HomeAssistant) -> None:
     eps_select_id = ent_reg.async_get_entity_id("select", DOMAIN, "SP1XXES100XX_eps_control")
     assert eps_select_id is not None
     assert (eps_state := hass.states.get(eps_select_id)) is not None
-    assert eps_state.state == "Turn On - Enable Cold Start"
+    assert eps_state.state == "turn_on_enable_cold_start"
 
     await hass.services.async_call(
         "select",
         "select_option",
-        {"entity_id": eps_select_id, "option": "Turn Off"},
+        {"entity_id": eps_select_id, "option": "turn_off"},
         blocking=True,
     )
     assert unit.holding[0x1029] == 0  # TURN_OFF = 0
@@ -270,7 +270,7 @@ async def test_hybrid_controls_lifecycle(hass: HomeAssistant) -> None:
     assert passive_timeout_id is not None
     assert passive_timeout_btn_id is not None
     assert (paction_state := hass.states.get(passive_action_id)) is not None
-    assert paction_state.state == "Return To Previous Mode"
+    assert paction_state.state == "return_to_previous_mode"
     assert (ptimeout_state := hass.states.get(passive_timeout_id)) is not None
     assert float(ptimeout_state.state) == 600
 
@@ -278,7 +278,7 @@ async def test_hybrid_controls_lifecycle(hass: HomeAssistant) -> None:
     await hass.services.async_call(
         "select",
         "select_option",
-        {"entity_id": passive_action_id, "option": "Force Standby"},
+        {"entity_id": passive_action_id, "option": "force_standby"},
         blocking=True,
     )
     await hass.services.async_call(
@@ -436,7 +436,7 @@ async def test_select_and_hybrid_button_error_branches(hass: HomeAssistant) -> N
     assert remote_id is not None
     with patch.object(coord.device.remote, "write", side_effect=ModbusConnectionError("Remote error")):
         with pytest.raises(HomeAssistantError, match="could not set remote switch"):
-            await hass.services.async_call("select", "select_option", {"entity_id": remote_id, "option": "Off"}, blocking=True)
+            await hass.services.async_call("select", "select_option", {"entity_id": remote_id, "option": "off"}, blocking=True)
 
     # Charger use mode write error
     charger_id = ent_reg.async_get_entity_id("select", DOMAIN, "SP1XXES100XX_charger_use_mode")
@@ -444,7 +444,7 @@ async def test_select_and_hybrid_button_error_branches(hass: HomeAssistant) -> N
     with patch.object(coord.device.charger, "write", side_effect=ModbusConnectionError("Charger error")):
         with pytest.raises(HomeAssistantError, match="could not set charger use mode"):
             await hass.services.async_call(
-                "select", "select_option", {"entity_id": charger_id, "option": "Self Use"}, blocking=True
+                "select", "select_option", {"entity_id": charger_id, "option": "self_use"}, blocking=True
             )
 
     # EPS mode write error
@@ -452,7 +452,7 @@ async def test_select_and_hybrid_button_error_branches(hass: HomeAssistant) -> N
     assert eps_id is not None
     with patch.object(coord.device.eps, "async_write_control", side_effect=ModbusConnectionError("EPS error")):
         with pytest.raises(HomeAssistantError, match="could not set EPS mode"):
-            await hass.services.async_call("select", "select_option", {"entity_id": eps_id, "option": "Turn Off"}, blocking=True)
+            await hass.services.async_call("select", "select_option", {"entity_id": eps_id, "option": "turn_off"}, blocking=True)
 
     # Passive timeout button uninitialized & error
     timeout_btn_id = ent_reg.async_get_entity_id("button", DOMAIN, "SP1XXES100XX_passive_timeout_update")
