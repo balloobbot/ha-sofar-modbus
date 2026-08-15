@@ -78,6 +78,10 @@ async def test_diagnostics_dumps_raw_registers_for_every_served_component() -> N
     assert "holding" in diagnostics["registers"]
     assert diagnostics["registers"]["holding"][0x0484] == 5000
     assert diagnostics["registers"]["holding"][0x0684] == 100
+    for addr in range(0x445, 0x445 + 7):
+        assert addr not in diagnostics["registers"]["holding"], (
+            f"register {addr:#x} should be stripped (encodes the serial number)"
+        )
     print("diagnostics-dumps-raw-registers: PASSED")
 
 

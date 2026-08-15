@@ -11,11 +11,19 @@ from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.core import HomeAssistant
 from modbus_connection import ModbusError
 
+from sofar_modbus.modern.device import SERIAL_REGISTER, SERIAL_WORDS  # the PyPI library, not a self-import — see __init__.py
+
 from .coordinator import SofarConfigEntry
 
 # The serial number identifies a specific physical inverter; diagnostics
 # files get attached to public GitHub issues, so it's redacted the same way
 # the coordinator already keeps it out of logs (see 1feaabe).
+#
+# async_redact_data only matches by key name, so it catches the named
+# "serial_number" field below but not the same value re-encoded as raw ASCII
+# in the "registers" dump -- SERIAL_REGISTER..SERIAL_REGISTER+SERIAL_WORDS
+# holds it too (identity block), and the register map is public, so leaving
+# it there would trivially defeat the redaction. Stripped separately below.
 TO_REDACT = {"serial_number"}
 
 # sofar-modbus's identify() (both modern and legacy device modules) matches a
@@ -41,6 +49,10 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: SofarCo
         registers = await device.async_read_raw()
     except ModbusError as err:
         read_errors["device"] = str(err)
+
+    if (holding := registers.get("holding")) is not None:
+        for addr in range(SERIAL_REGISTER, SERIAL_REGISTER + SERIAL_WORDS):
+            holding.pop(addr, None)
 
     serial = device.serial_number
     data: dict[str, Any] = {
