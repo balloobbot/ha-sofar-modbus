@@ -10,6 +10,20 @@ and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged
 
 ## [Unreleased]
 
+### Fixed
+
+- **Communication Health Entities Went Unavailable During a Dead Link**: `communication_health`
+  and its three sibling entities (`_success_rate`, `_last_error`, `_last_error_time`, added in
+  0.5.0) inherited `CoordinatorEntity`'s default `available`, which tracks
+  `coordinator.last_update_success` — the same flag `SofarEntity`-based sensors use, but those
+  gate on a per-component failure while this one only goes `False` on a dead link (a
+  `ModbusConnectionError`/fatal timeout that fails the whole poll). That's exactly the moment
+  these entities exist to describe, and `success_rate`/`last_error`/`last_error_time` are still
+  recorded correctly on the coordinator when a poll fails outright — the entities were just
+  hiding it behind `unavailable`. Fixed by giving the whole family a shared
+  `_SofarCommunicationHealthEntity` base (mirroring `SofarEntity`) whose `available` always
+  returns `True`, since none of them read the per-component `UpdateReport` in the first place.
+
 ## [0.5.0] - 2026-08-15
 
 ### Changed

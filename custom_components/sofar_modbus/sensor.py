@@ -91,25 +91,42 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_
     async_add_entities(entities)
 
 
-class SofarCommunicationHealthSensor(CoordinatorEntity[SofarDataUpdateCoordinator], SensorEntity):
-    """Whole-device link-quality summary: one bad cycle in the last 20 dents this, not any one entity.
-
-    Not a ``SofarEntity``: its data is coordinator bookkeeping, not a
-    component on ``coordinator.device``, so there's no single component to
-    gate ``available`` on the way ``SofarEntity.available`` does.
+class _SofarCommunicationHealthEntity(CoordinatorEntity[SofarDataUpdateCoordinator], SensorEntity):
+    """Base for the communication_health family: coordinator bookkeeping, not
+    a component on ``coordinator.device``, so there's no single component to
+    gate ``available`` on the way ``SofarEntity.available`` does — and unlike
+    ``SofarEntity``, these stay available even when the whole link is down
+    (``coordinator.last_update_success`` is False), since that's exactly the
+    moment a link-quality/last-error readout is most needed. success_rate/
+    last_error/last_error_time are recorded on the coordinator even when a
+    poll fails outright (see coordinator.py's ``_record_poll_outcome`` calls
+    ahead of every ``raise UpdateFailed``), so there's always something
+    correct to read here regardless of link state.
     """
 
     _attr_has_entity_name = True
-    _attr_translation_key = "communication_health"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: SofarDataUpdateCoordinator, unique_id_suffix: str) -> None:
+        super().__init__(coordinator)
+        serial = coordinator.device.serial_number
+        self._attr_unique_id = f"{serial}_{unique_id_suffix}"
+        self._attr_device_info = build_device_info(coordinator)
+
+    @property
+    def available(self) -> bool:
+        return True
+
+
+class SofarCommunicationHealthSensor(_SofarCommunicationHealthEntity):
+    """Whole-device link-quality summary: one bad cycle in the last 20 dents this, not any one entity."""
+
+    _attr_translation_key = "communication_health"
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options = ["good", "degraded", "poor", "unknown"]
 
     def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
-        super().__init__(coordinator)
-        serial = coordinator.device.serial_number
-        self._attr_unique_id = f"{serial}_communication_health"
-        self._attr_device_info = build_device_info(coordinator)
+        super().__init__(coordinator, "communication_health")
 
     @property
     def native_value(self) -> str:
@@ -123,59 +140,44 @@ class SofarCommunicationHealthSensor(CoordinatorEntity[SofarDataUpdateCoordinato
         return "poor"
 
 
-class SofarCommunicationHealthSuccessRateSensor(CoordinatorEntity[SofarDataUpdateCoordinator], SensorEntity):
+class SofarCommunicationHealthSuccessRateSensor(_SofarCommunicationHealthEntity):
     """Same rolling window as `SofarCommunicationHealthSensor`, as a number instead of a bucket."""
 
-    _attr_has_entity_name = True
     _attr_translation_key = "communication_health_success_rate"
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_native_unit_of_measurement = PERCENTAGE
     _attr_state_class = SensorStateClass.MEASUREMENT
 
     def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
-        super().__init__(coordinator)
-        serial = coordinator.device.serial_number
-        self._attr_unique_id = f"{serial}_communication_health_success_rate"
-        self._attr_device_info = build_device_info(coordinator)
+        super().__init__(coordinator, "communication_health_success_rate")
 
     @property
     def native_value(self) -> float | None:
         return self.coordinator.success_rate
 
 
-class SofarCommunicationHealthLastErrorSensor(CoordinatorEntity[SofarDataUpdateCoordinator], SensorEntity):
+class SofarCommunicationHealthLastErrorSensor(_SofarCommunicationHealthEntity):
     """Type + message of the most recent poll error, if any. Not cleared by a later success."""
 
-    _attr_has_entity_name = True
     _attr_translation_key = "communication_health_last_error"
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_entity_registry_enabled_default = False
 
     def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
-        super().__init__(coordinator)
-        serial = coordinator.device.serial_number
-        self._attr_unique_id = f"{serial}_communication_health_last_error"
-        self._attr_device_info = build_device_info(coordinator)
+        super().__init__(coordinator, "communication_health_last_error")
 
     @property
     def native_value(self) -> str | None:
         return self.coordinator.last_error
 
 
-class SofarCommunicationHealthLastErrorTimeSensor(CoordinatorEntity[SofarDataUpdateCoordinator], SensorEntity):
+class SofarCommunicationHealthLastErrorTimeSensor(_SofarCommunicationHealthEntity):
     """When the most recent poll error (see `SofarCommunicationHealthLastErrorSensor`) happened."""
 
-    _attr_has_entity_name = True
     _attr_translation_key = "communication_health_last_error_time"
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_device_class = SensorDeviceClass.TIMESTAMP
     _attr_entity_registry_enabled_default = False
 
     def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
-        super().__init__(coordinator)
-        serial = coordinator.device.serial_number
-        self._attr_unique_id = f"{serial}_communication_health_last_error_time"
-        self._attr_device_info = build_device_info(coordinator)
+        super().__init__(coordinator, "communication_health_last_error_time")
 
     @property
     def native_value(self) -> datetime | None:

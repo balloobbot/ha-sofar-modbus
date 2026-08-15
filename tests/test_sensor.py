@@ -20,6 +20,8 @@ from custom_components.sofar_modbus.sensor import (
     SENSOR_DESCRIPTIONS,
     SofarCommunicationHealthLastErrorSensor,
     SofarCommunicationHealthLastErrorTimeSensor,
+    SofarCommunicationHealthSensor,
+    SofarCommunicationHealthSuccessRateSensor,
     SofarSensor,
     SofarSensorDescription,
     SofarTotalSensor,
@@ -201,6 +203,42 @@ async def test_communication_health_sensor(hass: HomeAssistant) -> None:
     assert last_error_sensor.native_value is not None
     assert "ModbusTimeoutError" in last_error_sensor.native_value
     assert last_error_time_sensor.native_value is not None
+
+
+async def test_communication_health_entities_stay_available_on_dead_link(hass: HomeAssistant) -> None:
+    """Test the communication_health family stays available even when the whole link is down.
+
+    Unlike SofarSensor (see test_sensor_dead_link_unavailable), these read
+    coordinator bookkeeping that's recorded even on a total poll failure —
+    hiding behind "unavailable" would mask the exact information (last
+    error, degraded success rate) they exist to surface during an outage.
+    """
+    mock_conn = MockModbusConnection()
+    unit = mock_conn.for_unit(1)
+    _seed_pv_inverter(unit)
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="SS2ES104N5S445",
+        data=MOCK_CONFIG,
+    )
+    entry.add_to_hass(hass)
+
+    with patch("custom_components.sofar_modbus.build_connection", return_value=mock_conn):
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done(wait_background_tasks=True)
+
+    coordinator = entry.runtime_data
+    health_sensor = SofarCommunicationHealthSensor(coordinator)
+    success_rate_sensor = SofarCommunicationHealthSuccessRateSensor(coordinator)
+    last_error_sensor = SofarCommunicationHealthLastErrorSensor(coordinator)
+    last_error_time_sensor = SofarCommunicationHealthLastErrorTimeSensor(coordinator)
+
+    coordinator.last_update_success = False
+    assert health_sensor.available
+    assert success_rate_sensor.available
+    assert last_error_sensor.available
+    assert last_error_time_sensor.available
 
 
 async def test_total_sensor_restore_data_parsing(hass: HomeAssistant) -> None:
