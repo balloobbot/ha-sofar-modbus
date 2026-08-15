@@ -153,7 +153,7 @@ async def test_remote_switch_writes_immediately() -> None:
     assert entity.current_option == "on"
 
     events: list[WriteEvent] = []
-    coordinator.device.remote._unit.on_write(events.append)  # type: ignore[attr-defined]
+    coordinator.device.remote.modbus_unit.on_write(events.append)  # type: ignore[attr-defined]
     await entity.async_select_option("off")
     assert [(e.address, e.values) for e in events] == [(0x1104, [0])]
     assert coordinator._refresh_calls == 1
@@ -168,7 +168,7 @@ async def test_feedin_select_and_number_only_stage() -> None:
     _mute_state_writes(power_entity)
 
     events: list[WriteEvent] = []
-    coordinator.device.feed_in._unit.on_write(events.append)  # type: ignore[attr-defined]
+    coordinator.device.feed_in.modbus_unit.on_write(events.append)  # type: ignore[attr-defined]
     await mode_entity.async_select_option("enabled_feed_in_limitation")
     await power_entity.async_set_native_value(3000)
     assert not events, "staging must not touch the device"
@@ -189,7 +189,7 @@ async def test_feedin_update_button_commits_the_staged_pair() -> None:
     _mute_state_writes(button)
 
     events: list[WriteEvent] = []
-    coordinator.device.feed_in._unit.on_write(events.append)  # type: ignore[attr-defined]
+    coordinator.device.feed_in.modbus_unit.on_write(events.append)  # type: ignore[attr-defined]
     await button.async_press()
     assert [(e.address, e.values) for e in events] == [(0x1023, [1, 30])]
     assert coordinator.pending == {}, "committed keys must be cleared"
@@ -203,7 +203,7 @@ async def test_feedin_update_button_falls_back_to_live_values_when_untouched() -
     _mute_state_writes(button)
 
     events: list[WriteEvent] = []
-    coordinator.device.feed_in._unit.on_write(events.append)  # type: ignore[attr-defined]
+    coordinator.device.feed_in.modbus_unit.on_write(events.append)  # type: ignore[attr-defined]
     await button.async_press()
     # Nothing staged: re-writes exactly what was last read (Disabled, 4400 W).
     assert [(e.address, e.values) for e in events] == [(0x1023, [0, 44])]
@@ -219,7 +219,7 @@ async def test_active_power_control_switch_and_number_only_stage() -> None:
     assert switch.is_on is False  # nothing armed in the seeded register
 
     events: list[WriteEvent] = []
-    coordinator.device.active_power_control._unit.on_write(events.append)  # type: ignore[attr-defined]
+    coordinator.device.active_power_control.modbus_unit.on_write(events.append)  # type: ignore[attr-defined]
     await switch.async_turn_on()
     await number.async_set_native_value(30)
     assert not events, "staging must not touch the device"
@@ -238,7 +238,7 @@ async def test_active_power_control_update_button_commits_the_staged_pair() -> N
     _mute_state_writes(button)
 
     events: list[WriteEvent] = []
-    coordinator.device.active_power_control._unit.on_write(events.append)  # type: ignore[attr-defined]
+    coordinator.device.active_power_control.modbus_unit.on_write(events.append)  # type: ignore[attr-defined]
     await button.async_press()
     assert [(e.address, e.values) for e in events] == [(0x1105, [1, 300])]
     assert coordinator.pending == {}
@@ -248,7 +248,7 @@ async def test_active_power_control_update_button_commits_the_staged_pair() -> N
 
 async def test_a_write_failure_surfaces_as_home_assistant_error() -> None:
     _, coordinator = await _device_and_coordinator()
-    coordinator.device.feed_in._unit.fail_write(0x1023, ModbusError("nope"))  # type: ignore[attr-defined]
+    coordinator.device.feed_in.modbus_unit.fail_write(0x1023, ModbusError("nope"))  # type: ignore[attr-defined]
     button = FeedInUpdateButton(coordinator)
     _mute_state_writes(button)
 
@@ -288,7 +288,7 @@ async def test_charger_use_mode_writes_immediately() -> None:
     assert entity.current_option == "time_of_use"
 
     events: list[WriteEvent] = []
-    coordinator.device.charger._unit.on_write(events.append)  # type: ignore[attr-defined]
+    coordinator.device.charger.modbus_unit.on_write(events.append)  # type: ignore[attr-defined]
     await entity.async_select_option("peak_cut_mode")
     assert [(e.address, e.values) for e in events] == [(0x1110, [int(ChargerUseMode.PEAK_CUT_MODE)])]
     assert coordinator._refresh_calls == 1
@@ -302,7 +302,7 @@ async def test_eps_mode_writes_immediately() -> None:
     assert entity.current_option == "turn_on_enable_cold_start"
 
     events: list[WriteEvent] = []
-    coordinator.device.eps._unit.on_write(events.append)  # type: ignore[attr-defined]
+    coordinator.device.eps.modbus_unit.on_write(events.append)  # type: ignore[attr-defined]
     await entity.async_select_option("turn_off")
     assert [(e.address, e.values) for e in events] == [(0x1029, [0, 0])]
     assert coordinator._refresh_calls == 1
@@ -317,7 +317,7 @@ async def test_passive_timeout_select_and_number_only_stage() -> None:
     _mute_state_writes(timeout_entity)
 
     events: list[WriteEvent] = []
-    coordinator.device.passive._unit.on_write(events.append)  # type: ignore[attr-defined]
+    coordinator.device.passive.modbus_unit.on_write(events.append)  # type: ignore[attr-defined]
     await action_entity.async_select_option("force_standby")
     await timeout_entity.async_set_native_value(300)
     assert not events, "staging must not touch the device"
@@ -338,7 +338,7 @@ async def test_passive_timeout_update_button_commits_the_staged_pair() -> None:
     _mute_state_writes(button)
 
     events: list[WriteEvent] = []
-    coordinator.device.passive._unit.on_write(events.append)  # type: ignore[attr-defined]
+    coordinator.device.passive.modbus_unit.on_write(events.append)  # type: ignore[attr-defined]
     await button.async_press()
     assert [(e.address, e.values) for e in events] == [(0x1184, [300, int(PassiveModeTimeoutAction.FORCE_STANDBY)])]
     assert coordinator.pending == {}, "committed keys must be cleared"
@@ -355,7 +355,7 @@ async def test_passive_power_numbers_only_stage() -> None:
         _mute_state_writes(entity)
 
     events: list[WriteEvent] = []
-    coordinator.device.passive._unit.on_write(events.append)  # type: ignore[attr-defined]
+    coordinator.device.passive.modbus_unit.on_write(events.append)  # type: ignore[attr-defined]
     await grid_entity.async_set_native_value(1000)
     await min_entity.async_set_native_value(-500)
     await max_entity.async_set_native_value(4000)
@@ -377,7 +377,7 @@ async def test_passive_power_update_button_commits_the_staged_triple() -> None:
     _mute_state_writes(button)
 
     events: list[WriteEvent] = []
-    coordinator.device.passive._unit.on_write(events.append)  # type: ignore[attr-defined]
+    coordinator.device.passive.modbus_unit.on_write(events.append)  # type: ignore[attr-defined]
     await button.async_press()
     expected_words = encode_int(1000, count=2) + encode_int(-500, count=2) + encode_int(4000, count=2)
     assert [(e.address, e.values) for e in events] == [(0x1187, expected_words)]
@@ -388,7 +388,7 @@ async def test_passive_power_update_button_commits_the_staged_triple() -> None:
 
 async def test_a_hybrid_write_failure_surfaces_as_home_assistant_error() -> None:
     _, coordinator = await _hybrid_device_and_coordinator()
-    coordinator.device.passive._unit.fail_write(0x1184, ModbusError("nope"))  # type: ignore[attr-defined]
+    coordinator.device.passive.modbus_unit.fail_write(0x1184, ModbusError("nope"))  # type: ignore[attr-defined]
     button = PassiveTimeoutUpdateButton(coordinator)
     _mute_state_writes(button)
 
