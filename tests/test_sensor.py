@@ -157,7 +157,7 @@ async def test_communication_health_sensor(hass: HomeAssistant) -> None:
     # deterministic here).
     state = hass.states.get(health_id)
     assert state is not None
-    assert state.state == "Good"
+    assert state.state == "good"
     assert state.attributes["success_rate"] == 100.0
     assert state.attributes["last_error"] is None
     assert state.attributes["last_error_time"] is None
@@ -170,7 +170,7 @@ async def test_communication_health_sensor(hass: HomeAssistant) -> None:
 
     state = hass.states.get(health_id)
     assert state is not None
-    assert state.state != "Good"
+    assert state.state != "good"
     assert state.attributes["success_rate"] == coordinator.success_rate
     assert coordinator.success_rate is not None and coordinator.success_rate < 100.0
     assert state.attributes["last_error"] is not None

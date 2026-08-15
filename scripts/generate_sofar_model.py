@@ -30,6 +30,7 @@ never imported at runtime by the generator itself.
 from __future__ import annotations
 
 import ast
+import json
 import subprocess
 import sys
 from collections.abc import Iterator
@@ -42,6 +43,8 @@ import extract_sofar_ast as ex  # noqa: E402
 
 REPO_ROOT = Path(__file__).parent.parent
 SENSOR_PY = REPO_ROOT / "custom_components" / "sofar_modbus" / "sensor.py"
+STRINGS_JSON = REPO_ROOT / "custom_components" / "sofar_modbus" / "strings.json"
+TRANSLATIONS_EN_JSON = REPO_ROOT / "custom_components" / "sofar_modbus" / "translations" / "en.json"
 
 UPSTREAM_REPO = Path("/home/darkrain/homeassistant/homeassistant-solax-modbus")
 
@@ -213,8 +216,16 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (\
 
 def gen_sensor_descriptions(
     entries: list[dict[str, Any]], component_of: dict[str, str], enum_of: dict[str, type[IntEnum]], commit: str
-) -> str:
+) -> tuple[str, dict[str, str]]:
+    """Return the generated tail source, plus key -> display name for strings.json.
+
+    Entity naming goes through ``translation_key`` (Home Assistant's required
+    pattern for new integrations), not a literal ``name=`` — the display text
+    upstream hands us is emitted into strings.json's ``entity.sensor.<key>.name``
+    instead, by ``update_entity_sensor_strings`` below.
+    """
     lines = [_TAIL_TEMPLATE.format(commit=commit)]
+    names: dict[str, str] = {}
 
     seen: set[str] = set()
     for entry in entries:
@@ -230,10 +241,15 @@ def gen_sensor_descriptions(
         if key not in component_of:
             raise KeyError(f"{key!r} has no sofar_modbus component — field renamed upstream or in the library?")
 
+        name = entry.get("name")
+        if name is None or name["kind"] != "literal":
+            raise ValueError(f"{key!r} has no literal upstream name — can't emit a strings.json translation for it")
+        names[key] = name["value"]
+
         lines.append("    SofarSensorDescription(")
         lines.append(f"        key={key!r},")
         lines.append(f"        component={component_of[key]!r},")
-        lines.append(f"        name={entry_field_src(entry, 'name')},")
+        lines.append(f"        translation_key={key!r},")
 
         # Enum-typed fields get their device_class/options from the library's
         # own type, not from upstream's `scale` dict (not a real
@@ -263,7 +279,26 @@ def gen_sensor_descriptions(
         lines.append("    ),")
 
     lines.append(")")
-    return "\n".join(lines) + "\n"
+    return "\n".join(lines) + "\n", names
+
+
+def update_entity_sensor_strings(names: dict[str, str]) -> None:
+    """Write key -> name into strings.json's and translations/en.json's
+    entity.sensor block, keeping both files byte-identical (see README) and
+    preserving hand-written entries (e.g. communication_health) that aren't
+    part of SENSOR_DESCRIPTIONS.
+    """
+    for path in (STRINGS_JSON, TRANSLATIONS_EN_JSON):
+        data = json.loads(path.read_text())
+        sensor_block = data.setdefault("entity", {}).setdefault("sensor", {})
+        for key, name in names.items():
+            sensor_block.setdefault(key, {})["name"] = name
+        # Stable order: generated keys in SENSOR_DESCRIPTIONS order, then any
+        # hand-written ones (e.g. communication_health) already present.
+        ordered = {key: sensor_block[key] for key in names if key in sensor_block}
+        ordered.update({key: value for key, value in sensor_block.items() if key not in ordered})
+        data["entity"]["sensor"] = ordered
+        path.write_text(json.dumps(data, indent=4) + "\n")
 
 
 def merged_sensor_py(tail: str) -> str:
@@ -288,14 +323,20 @@ def main() -> None:
 
     component_of = build_component_of()
     enum_of = build_enum_of()
-    tail = gen_sensor_descriptions(sensors, component_of, enum_of, commit)
+    tail, names = gen_sensor_descriptions(sensors, component_of, enum_of, commit)
     SENSOR_PY.write_text(merged_sensor_py(tail))
+    update_entity_sensor_strings(names)
 
     print(f"sensor rows: {tail.count('SofarSensorDescription(')}", file=sys.stderr)
     print(f"upstream commit: {commit}", file=sys.stderr)
 
     subprocess.run(
         [sys.executable, "-m", "ruff", "check", "--fix", "--quiet", str(SENSOR_PY)],
+        cwd=REPO_ROOT,
+        check=False,
+    )
+    subprocess.run(
+        [sys.executable, "-m", "ruff", "format", "--quiet", str(SENSOR_PY)],
         cwd=REPO_ROOT,
         check=False,
     )
