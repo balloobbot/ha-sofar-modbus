@@ -10,6 +10,8 @@ and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-15
+
 ### Changed
 
 - **Communication Health Split Into Separate Entities**: `communication_health`'s
@@ -48,6 +50,11 @@ and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged
   `TOTAL_INCREASING`, not `MEASUREMENT`) was reviewed and kept as a deliberate choice —
   the recorder buckets long-term statistics at 5 minutes regardless. `offgrid_frequency`
   was left alone to match every other frequency sensor in the file. Reported in #46.
+
+### Verification
+
+- Full suite (`pytest tests/` — 71 passed), `ruff check`, `ruff format --check`, and
+  `mypy --explicit-package-bases custom_components/ tests/` all green on `826a38d`.
 
 ## [0.4.1] - 2026-08-15
 
