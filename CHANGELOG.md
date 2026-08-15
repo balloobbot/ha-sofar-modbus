@@ -5,7 +5,8 @@ All notable changes to this project are documented here. Format follows
 [Semantic Versioning](https://semver.org/) — while the major version is `0`, a `MINOR` bump
 means new user-facing capability (a new platform, new entities reachable from Home Assistant),
 a `PATCH` bump means a fix with no new capability. Each version bump gets a matching git tag
-and GitHub Release.
+and GitHub Release. Tags are unprefixed (`X.Y.Z`, matching `manifest.json`'s `version` field
+and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged `vX.Y.Z`.
 
 ## [Unreleased]
 
