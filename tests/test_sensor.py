@@ -383,7 +383,7 @@ def test_coordinator_served_components_fallbacks() -> None:
     from sofar_modbus.model import UpdateReport
 
     coord = SofarDataUpdateCoordinator.__new__(SofarDataUpdateCoordinator)
-    coord.device = SimpleNamespace(_polled=None)  # type: ignore[assignment]
+    coord.device = SimpleNamespace(polled_components=None)  # type: ignore[assignment]
     coord.data = None  # type: ignore[assignment]
     assert coord.served_components == frozenset()
 
