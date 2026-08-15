@@ -26,7 +26,11 @@ from modbus_connection import IllegalDataAddressError, ModbusConnectionError, Mo
 from modbus_connection.mock import MockModbusConnection, MockModbusUnit  # noqa: E402
 from sofar_modbus.modern.device import SofarInverter  # noqa: E402
 
-from custom_components.sofar_modbus.coordinator import _HEALTH_WINDOW, SofarDataUpdateCoordinator  # noqa: E402
+from custom_components.sofar_modbus.coordinator import (  # noqa: E402
+    _HEALTH_WINDOW,
+    _SLOW_TIER_EVERY_N_CYCLES,
+    SofarDataUpdateCoordinator,
+)
 
 
 class _FakeConnection:
@@ -229,7 +233,7 @@ async def test_slow_tier_is_skipped_on_off_cycles() -> None:
     coordinator = _coordinator(device, _FakeConnection())
     await coordinator._async_update_data()  # settles tiers
 
-    for _ in range(3):  # cycles not due (N=4)
+    for _ in range(_SLOW_TIER_EVERY_N_CYCLES - 1):  # cycles not due
         report = await coordinator._async_update_data()
         assert "energy" not in report.updated, "slow tier should be skipped off-cycle"
         assert "grid" in report.updated
@@ -300,7 +304,7 @@ async def test_force_slow_tier_polls_slow_tier_on_off_cycles() -> None:
     coordinator = _coordinator(device, _FakeConnection())
     await coordinator._async_update_data()  # settles tiers, cycle 0 done (next cycle is 1, not due)
 
-    # Next cycle is off-cycle (cycle 1, N=4)
+    # Next cycle is off-cycle (cycle 1)
     coordinator._force_slow_tier = True
     report = await coordinator._async_update_data()
     assert "energy" in report.updated, "slow tier should poll when forced"

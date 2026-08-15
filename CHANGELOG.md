@@ -10,6 +10,41 @@ and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged
 
 ## [Unreleased]
 
+## [0.3.16] - 2026-08-15
+
+### Changed
+
+- **Faster Default Scan Cadence**: `DEFAULT_SCAN_INTERVAL` (fast tier) drops from 15s to
+  5s; `_SLOW_TIER_EVERY_N_CYCLES` and `_HEALTH_WINDOW` are retuned (4→12, 20→60) to hold
+  the slow tier at ~60s and the health window at ~5min in wall-clock terms rather than
+  quietly shrinking 3x along with the base interval. User-configurable polling was
+  considered and dropped — Home Assistant Core's architecture guidance is against exposing
+  scan interval as a config option, so this is a fixed retune instead. 5s was chosen over
+  `solax_modbus`'s more aggressive 1s/2s/5s tiers because it's empirically verified against
+  production: recorder history for a live PV power sensor at a 5s `solax_modbus`
+  scan_interval showed exact 5.0s-multiple gaps between state changes (confirming no
+  faster internal update was being missed) and a 44% distinct-value rate between
+  consecutive polls even in flat conditions (confirming the register isn't just handing
+  back a cached duplicate) — matching `solax_modbus`'s own documented floor of "do not
+  poll quicker than 5s on inverters with a baud of 9600." Sub-5s cadence remains
+  unverified (no bench setup faster than the household's live inverter to test against),
+  so it isn't pursued.
+  - A third "read once at setup, never repoll" tier for `identity` (serial number,
+    firmware versions — genuinely static) was considered and rejected: the upstream
+    `sofar_modbus` library's `Identity` component is a single Modbus register block that
+    bundles those fields with the inverter's live RTC (the disabled-by-default `System
+    Time` sensor), so pulling the whole component off the timer would freeze that sensor's
+    value forever if a user ever enabled it. Splitting the two would require an upstream
+    `sofar_modbus` change; not pursued given the negligible cost of re-reading ~10 extra
+    registers every 60s.
+
+### Verification
+
+- `tests/lib/test_coordinator.py` updated to derive its off-cycle loop count from
+  `_SLOW_TIER_EVERY_N_CYCLES` instead of a hardcoded `3`/`N=4`, so it stays correct at the
+  new cadence. Full suite (standalone scripts + `pytest`, 64 passed), `ruff` format/lint,
+  and `mypy` all green.
+
 ## [0.3.15] - 2026-08-15
 
 ### Added

@@ -52,8 +52,8 @@ from sofar_modbus.modern.device import SofarInverter
 _LOGGER = logging.getLogger(__name__)
 
 _TIMEOUT_DISCONNECT_THRESHOLD = 3
-_SLOW_TIER_EVERY_N_CYCLES = 4  # ~60s at the 15s base scan interval
-_HEALTH_WINDOW = 20  # ~5min at the 15s base scan interval
+_SLOW_TIER_EVERY_N_CYCLES = 12  # ~60s at the 5s base scan interval
+_HEALTH_WINDOW = 60  # ~5min at the 5s base scan interval
 
 type SofarConfigEntry = ConfigEntry[SofarDataUpdateCoordinator]
 
