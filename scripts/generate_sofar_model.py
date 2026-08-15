@@ -78,6 +78,50 @@ CONTROL_ONLY_KEYS: set[str] = WRITABLE_FIELDS | {
     "passive_mode_timeout_action",
 }
 
+# Upstream plugin_sofar.py omits state_class on every off-grid live-output field
+# (voltage/current/active/reactive/apparent power per phase, load-peak-ratio, plus
+# the offgrid component's own reactive_power_offgrid_total) even though each has a
+# device_class and unit. On offgrid_single_phase/offgrid_three_phase that silently
+# demotes them out of coordinator.py's fast poll tier (_volatile_components() keys
+# off state_class == MEASUREMENT); everywhere here it also costs them long-term
+# statistics — see issue #46. Corrected here, not hand-patched into the generated
+# file, so a regeneration can't silently drop it.
+_STATE_CLASS_MEASUREMENT_OVERRIDES: frozenset[str] = frozenset(
+    {
+        "reactive_power_offgrid_total",
+        "offgrid_voltage",
+        "offgrid_voltage_l1",
+        "offgrid_voltage_l2",
+        "offgrid_voltage_l3",
+        "offgrid_voltage_output_l1n",
+        "offgrid_voltage_output_l2n",
+        "offgrid_current_output",
+        "offgrid_current_output_l1",
+        "offgrid_current_output_l2",
+        "offgrid_current_output_l3",
+        "offgrid_current_output_l1n",
+        "offgrid_current_output_l2n",
+        "offgrid_active_power_output",
+        "offgrid_active_power_output_l1",
+        "offgrid_active_power_output_l2",
+        "offgrid_active_power_output_l3",
+        "offgrid_active_power_output_l1n",
+        "offgrid_active_power_output_l2n",
+        "offgrid_reactive_power_output",
+        "offgrid_reactive_power_output_l1",
+        "offgrid_reactive_power_output_l2",
+        "offgrid_reactive_power_output_l3",
+        "offgrid_apparent_power_output",
+        "offgrid_apparent_power_output_l1",
+        "offgrid_apparent_power_output_l2",
+        "offgrid_apparent_power_output_l3",
+        "offgrid_loadpeakratio",
+        "offgrid_loadpeakratio_l1",
+        "offgrid_loadpeakratio_l2",
+        "offgrid_loadpeakratio_l3",
+    }
+)
+
 # Component-level @property fields (computed from underlying registers) that
 # Component.declared_fields doesn't know about, since they aren't field
 # descriptors. Identity.rtc is the only one that reaches a sensor here — the
@@ -270,6 +314,9 @@ def gen_sensor_descriptions(
         ):
             if field == "device_class" and enum_type is not None:
                 continue  # already emitted above, from the library's own enum type
+            if field == "state_class" and key in _STATE_CLASS_MEASUREMENT_OVERRIDES:
+                lines.append("        state_class=SensorStateClass.MEASUREMENT,")
+                continue
             optional_line = _optional_kwarg_line(entry, field)
             if optional_line is not None:
                 lines.append(optional_line)

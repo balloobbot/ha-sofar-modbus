@@ -10,6 +10,26 @@ and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged
 
 ## [Unreleased]
 
+### Fixed
+
+- **Off-Grid Output Readings Stuck on the Slow Poll Tier**: `offgrid_single_phase` and
+  `offgrid_three_phase` (31 sensors combined with `reactive_power_offgrid_total`:
+  voltage/current/active/reactive/apparent power per phase, load-peak-ratio) never
+  declared `state_class=MEASUREMENT`, even though each has a `device_class` and unit.
+  `coordinator.py`'s `_volatile_components()` keys fast-vs-slow tier off exactly that
+  field, so these components — live electrical output, most needed during an outage —
+  silently landed on the ~60s slow tier instead of the ~5s fast tier by omission, not
+  by any deliberate choice. Also picks up long-term statistics (previously none) and
+  removes a redundant round trip per cycle where `offgrid`/`offgrid_three_phase` are
+  both due, since they're now on the same tier. Root cause: `sensor.py`'s
+  `SENSOR_DESCRIPTIONS` tail is generated from upstream `plugin_sofar.py`, which has
+  the same gap — fixed with a local override in `scripts/generate_sofar_model.py`
+  rather than hand-patched into the generated file, so a future regeneration can't
+  silently drop it. `energy`/`battery_energy` remaining on the slow tier (they're
+  `TOTAL_INCREASING`, not `MEASUREMENT`) was reviewed and kept as a deliberate choice —
+  the recorder buckets long-term statistics at 5 minutes regardless. `offgrid_frequency`
+  was left alone to match every other frequency sensor in the file. Reported in #46.
+
 ## [0.4.1] - 2026-08-15
 
 ### Fixed

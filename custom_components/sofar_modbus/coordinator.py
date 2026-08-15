@@ -71,6 +71,11 @@ def _volatile_components() -> frozenset[str]:
     from this module, so a module-level import back would be circular — this
     one only runs when a poll actually needs it, well after both modules have
     finished loading.
+
+    Only checks for MEASUREMENT, so TOTAL/TOTAL_INCREASING counters (energy,
+    battery_energy) land in the slow tier too — a deliberate choice, not a
+    side effect: the recorder buckets long-term statistics at 5 minutes
+    regardless, so polling those faster wouldn't sharpen their stats.
     """
     from .sensor import SENSOR_DESCRIPTIONS
 
