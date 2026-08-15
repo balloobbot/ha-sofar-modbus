@@ -22,11 +22,12 @@ Follow this order every time so the two can't drift apart again:
 4. Tag and release, using the CHANGELOG section's `### Added`/`### Changed`/
    `### Fixed` bullets verbatim as the release notes — everything except
    `### Verification`, which is an internal engineering note, not
-   user-facing:
+   user-facing. Tags are unprefixed (`X.Y.Z`, matching `manifest.json` and
+   Core's own tag format) — versions before 0.3.15 were tagged `vX.Y.Z`:
    ```bash
-   git tag vX.Y.Z
-   git push origin vX.Y.Z
-   gh release create vX.Y.Z --title vX.Y.Z --notes "<CHANGELOG section content minus ### Verification>"
+   git tag X.Y.Z
+   git push origin X.Y.Z
+   gh release create X.Y.Z --title X.Y.Z --notes "<CHANGELOG section content minus ### Verification>"
    ```
 
 See `CHANGELOG.md`'s header for the `MINOR`/`PATCH` versioning rule (while

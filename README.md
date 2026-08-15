@@ -23,7 +23,7 @@
 - ⚡ **Modern Async Core**: Built on [`modbus-connection`](https://github.com/home-assistant-libs/modbus-connection) with typed register planning, automatic reconnects, and zero custom socket hacks.
 - 🛡️ **Fault-Tolerant Polling**:
   - **Single-Component Resilience**: A temporary slow or failed component block doesn't fail the rest of the poll.
-  - **Tiered Scan Cadence**: Fast telemetry polling (~15s) with slow background polling (~60s) for static parameters.
+  - **Tiered Scan Cadence**: Fast telemetry polling (~5s) with slow background polling (~60s) for static parameters.
   - **Retry-Before-Fail**: Immediate transient retry before marking a component failed.
   - **Transition-Only Logging**: Clear warning logged on initial failure transition; zero poll spam.
   - **Dead-Link Recovery**: Automatic transport disconnect and clean reconnect on wedged serial bridges.
