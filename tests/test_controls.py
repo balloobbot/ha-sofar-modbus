@@ -76,7 +76,7 @@ async def test_pv_controls_lifecycle(hass: HomeAssistant) -> None:
 
     with patch("custom_components.sofar_modbus.build_connection", return_value=mock_conn):
         await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
+        await hass.async_block_till_done(wait_background_tasks=True)
 
     ent_reg = er.async_get(hass)
     coordinator: SofarDataUpdateCoordinator = entry.runtime_data
@@ -228,7 +228,7 @@ async def test_hybrid_controls_lifecycle(hass: HomeAssistant) -> None:
 
     with patch("custom_components.sofar_modbus.build_connection", return_value=mock_conn):
         await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
+        await hass.async_block_till_done(wait_background_tasks=True)
 
     ent_reg = er.async_get(hass)
     coordinator: SofarDataUpdateCoordinator = entry.runtime_data
@@ -360,7 +360,7 @@ async def test_button_errors_when_uninitialized_or_comm_failure(hass: HomeAssist
 
     with patch("custom_components.sofar_modbus.build_connection", return_value=mock_conn):
         await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
+        await hass.async_block_till_done(wait_background_tasks=True)
 
     ent_reg = er.async_get(hass)
     feedin_button_id = ent_reg.async_get_entity_id("button", DOMAIN, "SS2ES104N5S445_feedin_update")
@@ -426,7 +426,7 @@ async def test_select_and_hybrid_button_error_branches(hass: HomeAssistant) -> N
 
     with patch("custom_components.sofar_modbus.build_connection", return_value=mock_conn):
         await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
+        await hass.async_block_till_done(wait_background_tasks=True)
 
     ent_reg = er.async_get(hass)
     coord: SofarDataUpdateCoordinator = entry.runtime_data

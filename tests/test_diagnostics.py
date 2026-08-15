@@ -47,7 +47,7 @@ async def test_get_diagnostics(hass: HomeAssistant) -> None:
 
     with patch("custom_components.sofar_modbus.build_connection", return_value=mock_conn):
         await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
+        await hass.async_block_till_done(wait_background_tasks=True)
 
     diag = await async_get_config_entry_diagnostics(hass, entry)
     assert diag["serial_number"] == "SS2ES104N5S445"
@@ -75,7 +75,7 @@ async def test_get_diagnostics_with_read_error(hass: HomeAssistant) -> None:
 
     with patch("custom_components.sofar_modbus.build_connection", return_value=mock_conn):
         await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
+        await hass.async_block_till_done(wait_background_tasks=True)
 
     # Fail raw read
     with patch.object(

@@ -61,7 +61,7 @@ async def test_sensor_entities_created_and_state(hass: HomeAssistant) -> None:
 
     with patch("custom_components.sofar_modbus.build_connection", return_value=mock_conn):
         await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
+        await hass.async_block_till_done(wait_background_tasks=True)
 
     ent_reg = er.async_get(hass)
 
@@ -103,7 +103,7 @@ async def test_sensor_availability_on_component_failure(hass: HomeAssistant) -> 
 
     with patch("custom_components.sofar_modbus.build_connection", return_value=mock_conn):
         await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
+        await hass.async_block_till_done(wait_background_tasks=True)
 
     ent_reg = er.async_get(hass)
     grid_freq_id = ent_reg.async_get_entity_id("sensor", DOMAIN, "SS2ES104N5S445_grid_frequency")
@@ -145,7 +145,7 @@ async def test_communication_health_sensor(hass: HomeAssistant) -> None:
 
     with patch("custom_components.sofar_modbus.build_connection", return_value=mock_conn):
         await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
+        await hass.async_block_till_done(wait_background_tasks=True)
 
     ent_reg = er.async_get(hass)
     health_id = ent_reg.async_get_entity_id("sensor", DOMAIN, "SS2ES104N5S445_communication_health")
@@ -193,7 +193,7 @@ async def test_total_sensor_restore_data_parsing(hass: HomeAssistant) -> None:
 
     with patch("custom_components.sofar_modbus.build_connection", return_value=mock_conn):
         await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
+        await hass.async_block_till_done(wait_background_tasks=True)
 
     coord = entry.runtime_data
     desc = next(d for d in SENSOR_DESCRIPTIONS if d.key == "load_consumption_total")
@@ -245,7 +245,7 @@ async def test_smoothed_total_increasing_dip_tolerance(hass: HomeAssistant) -> N
 
     with patch("custom_components.sofar_modbus.build_connection", return_value=mock_conn):
         await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
+        await hass.async_block_till_done(wait_background_tasks=True)
 
     coord = entry.runtime_data
     desc = next(d for d in SENSOR_DESCRIPTIONS if d.key == "load_consumption_total")
@@ -280,7 +280,7 @@ async def test_sensor_dead_link_unavailable(hass: HomeAssistant) -> None:
 
     with patch("custom_components.sofar_modbus.build_connection", return_value=mock_conn):
         await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
+        await hass.async_block_till_done(wait_background_tasks=True)
 
     coord = entry.runtime_data
     desc = next(d for d in SENSOR_DESCRIPTIONS if d.key == "grid_frequency")

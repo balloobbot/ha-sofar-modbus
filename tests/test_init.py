@@ -53,7 +53,7 @@ async def test_setup_and_unload_entry(hass: HomeAssistant) -> None:
 
     with patch("custom_components.sofar_modbus.build_connection", return_value=mock_conn):
         await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
+        await hass.async_block_till_done(wait_background_tasks=True)
 
     assert entry.state is ConfigEntryState.LOADED
     assert isinstance(entry.runtime_data, SofarDataUpdateCoordinator)
@@ -80,7 +80,7 @@ async def test_setup_entry_not_ready_on_unrecognized(hass: HomeAssistant) -> Non
 
     with patch("custom_components.sofar_modbus.build_connection", return_value=mock_conn):
         await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
+        await hass.async_block_till_done(wait_background_tasks=True)
 
     assert entry.state is ConfigEntryState.SETUP_RETRY
 
@@ -102,7 +102,7 @@ async def test_setup_entry_not_ready_on_connection_error(hass: HomeAssistant) ->
 
     with patch("custom_components.sofar_modbus.build_connection", return_value=mock_conn):
         await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
+        await hass.async_block_till_done(wait_background_tasks=True)
 
     assert entry.state is ConfigEntryState.SETUP_RETRY
 
@@ -125,7 +125,7 @@ async def test_setup_entry_loads_offline_when_pre_identified(hass: HomeAssistant
 
     with patch("custom_components.sofar_modbus.build_connection", return_value=mock_conn):
         await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
+        await hass.async_block_till_done(wait_background_tasks=True)
 
     assert entry.state is ConfigEntryState.LOADED
     assert isinstance(entry.runtime_data, SofarDataUpdateCoordinator)
@@ -147,7 +147,7 @@ async def test_setup_entry_without_pre_identified_serial(hass: HomeAssistant) ->
 
     with patch("custom_components.sofar_modbus.build_connection", return_value=mock_conn):
         await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
+        await hass.async_block_till_done(wait_background_tasks=True)
 
     assert entry.state is ConfigEntryState.LOADED
     assert entry.runtime_data.device.serial_number == "SS2ES104N5S445"
@@ -170,7 +170,7 @@ async def test_setup_entry_not_ready_on_unrecognized_serial_on_device(hass: Home
 
     with patch("custom_components.sofar_modbus.build_connection", return_value=mock_conn):
         await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
+        await hass.async_block_till_done(wait_background_tasks=True)
 
     assert entry.state is ConfigEntryState.SETUP_RETRY
 
