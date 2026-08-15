@@ -3,6 +3,17 @@
 Layering (see modbus-connection's integration guide): this module owns the
 ModbusConnection and the coordinator; sofar-modbus is the HA-free device
 library that does the actual register work.
+
+Note on the ``sofar_modbus`` imports below: that's the third-party
+``sofar-modbus`` PyPI library, not a self-import — this integration's own
+package is ``custom_components.sofar_modbus``, a distinct namespace despite
+the identical name. Confusing to read, but harmless: Home Assistant never
+puts ``custom_components/`` on ``sys.path`` as a top-level package. Renaming
+this integration's domain to avoid the collision was considered and
+rejected — it would break every existing install's entity_ids and Energy
+Dashboard history, which this project already goes out of its way to
+protect (see the solax_modbus migration notes in README and the 0.3.14
+restore-across-reboots work).
 """
 
 from __future__ import annotations

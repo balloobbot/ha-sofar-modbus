@@ -12,7 +12,7 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PORT
 from modbus_connection import ModbusError
 
-from sofar_modbus.modern.device import SofarInverter
+from sofar_modbus.modern.device import SofarInverter  # the PyPI library, not a self-import — see __init__.py
 
 from .connection import build_connection, unit_id
 from .const import CONF_MODBUS_ADDR, CONF_READ_EPS, DEFAULT_MODBUS_ADDR, DEFAULT_NAME, DEFAULT_PORT, DOMAIN

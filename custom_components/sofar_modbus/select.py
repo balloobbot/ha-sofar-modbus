@@ -27,6 +27,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from modbus_connection import ModbusError
 
+# The PyPI library, not a self-import — see __init__.py
 from sofar_modbus.modern import ChargerUseMode, EpsControlMode, FeedinLimitationMode, PassiveModeTimeoutAction, RemoteSwitchOnOff
 
 from .coordinator import SofarConfigEntry, SofarDataUpdateCoordinator

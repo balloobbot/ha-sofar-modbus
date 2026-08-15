@@ -12,7 +12,7 @@ from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from sofar_modbus.modern import PowerControlFlags
+from sofar_modbus.modern import PowerControlFlags  # the PyPI library, not a self-import — see __init__.py
 
 from .coordinator import SofarConfigEntry, SofarDataUpdateCoordinator
 from .entity import SofarEntity
