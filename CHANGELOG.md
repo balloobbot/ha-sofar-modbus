@@ -10,6 +10,8 @@ and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-08-15
+
 ### Fixed
 
 - **Communication Health Entities Went Unavailable During a Dead Link**: `communication_health`
@@ -23,6 +25,13 @@ and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged
   hiding it behind `unavailable`. Fixed by giving the whole family a shared
   `_SofarCommunicationHealthEntity` base (mirroring `SofarEntity`) whose `available` always
   returns `True`, since none of them read the per-component `UpdateReport` in the first place.
+
+### Verification
+
+- New test `test_communication_health_entities_stay_available_on_dead_link` confirms all four
+  entities stay `available` with `coordinator.last_update_success = False`. Full suite
+  (`pytest tests/` — 72 passed), `ruff check`, `ruff format --check`, and
+  `mypy --explicit-package-bases custom_components/ tests/` all green on `afa2924`.
 
 ## [0.5.0] - 2026-08-15
 
