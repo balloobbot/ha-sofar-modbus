@@ -18,6 +18,8 @@ from custom_components.sofar_modbus.const import CONF_MODBUS_ADDR, CONF_READ_EPS
 from custom_components.sofar_modbus.coordinator import _HEALTH_WINDOW, SofarDataUpdateCoordinator
 from custom_components.sofar_modbus.sensor import (
     SENSOR_DESCRIPTIONS,
+    SofarCommunicationHealthLastErrorSensor,
+    SofarCommunicationHealthLastErrorTimeSensor,
     SofarSensor,
     SofarSensorDescription,
     SofarTotalSensor,
@@ -130,7 +132,17 @@ async def test_sensor_availability_on_component_failure(hass: HomeAssistant) -> 
 
 
 async def test_communication_health_sensor(hass: HomeAssistant) -> None:
-    """Test the communication_health sensor's state and attributes track poll outcomes."""
+    """Test the communication_health sensor family tracks poll outcomes.
+
+    success_rate/last_error/last_error_time used to be extra_state_attributes
+    on the communication_health sensor itself; they're now their own entities
+    (HA Core discourages state-like data living in attributes).
+    success_rate is checked live via hass.states; last_error/last_error_time
+    are disabled by default (mirroring rtc/hardware_version — mostly None),
+    so they're checked by instantiating the entity class directly against
+    the live coordinator, the same way SofarSensor is unit-tested elsewhere
+    in this file.
+    """
     mock_conn = MockModbusConnection()
     unit = mock_conn.for_unit(1)
     _seed_pv_inverter(unit)
@@ -149,33 +161,46 @@ async def test_communication_health_sensor(hass: HomeAssistant) -> None:
 
     ent_reg = er.async_get(hass)
     health_id = ent_reg.async_get_entity_id("sensor", DOMAIN, "SS2ES104N5S445_communication_health")
+    success_rate_id = ent_reg.async_get_entity_id("sensor", DOMAIN, "SS2ES104N5S445_communication_health_success_rate")
+    last_error_id = ent_reg.async_get_entity_id("sensor", DOMAIN, "SS2ES104N5S445_communication_health_last_error")
+    last_error_time_id = ent_reg.async_get_entity_id("sensor", DOMAIN, "SS2ES104N5S445_communication_health_last_error_time")
     assert health_id is not None
+    assert success_rate_id is not None
+    assert last_error_id is not None
+    assert last_error_time_id is not None
+    last_error_entry = ent_reg.async_get(last_error_id)
+    last_error_time_entry = ent_reg.async_get(last_error_time_id)
+    assert last_error_entry is not None and last_error_entry.disabled_by is not None
+    assert last_error_time_entry is not None and last_error_time_entry.disabled_by is not None
+
+    coordinator = entry.runtime_data
+    last_error_sensor = SofarCommunicationHealthLastErrorSensor(coordinator)
+    last_error_time_sensor = SofarCommunicationHealthLastErrorTimeSensor(coordinator)
 
     # Every poll during setup was clean (setup schedules its own background
     # refreshes — see __init__.py's _async_startup_refresh — so more than one
     # cycle may already have landed; only the *rate*, not the cycle count, is
     # deterministic here).
-    state = hass.states.get(health_id)
-    assert state is not None
-    assert state.state == "good"
-    assert state.attributes["success_rate"] == 100.0
-    assert state.attributes["last_error"] is None
-    assert state.attributes["last_error_time"] is None
+    health_state = hass.states.get(health_id)
+    success_rate_state = hass.states.get(success_rate_id)
+    assert health_state is not None and health_state.state == "good"
+    assert success_rate_state is not None and success_rate_state.state == "100.0"
+    assert last_error_sensor.native_value is None
+    assert last_error_time_sensor.native_value is None
 
-    # A failed poll degrades the state and populates the error attributes.
+    # A failed poll degrades the state and populates the error entities.
     unit.fail_read(0x0484, ModbusTimeoutError("Timeout reading grid"))
-    coordinator = entry.runtime_data
     await coordinator.async_refresh()
     await hass.async_block_till_done()
 
-    state = hass.states.get(health_id)
-    assert state is not None
-    assert state.state != "good"
-    assert state.attributes["success_rate"] == coordinator.success_rate
+    health_state = hass.states.get(health_id)
+    success_rate_state = hass.states.get(success_rate_id)
+    assert health_state is not None and health_state.state != "good"
+    assert success_rate_state is not None and float(success_rate_state.state) == coordinator.success_rate
     assert coordinator.success_rate is not None and coordinator.success_rate < 100.0
-    assert state.attributes["last_error"] is not None
-    assert "ModbusTimeoutError" in state.attributes["last_error"]
-    assert state.attributes["last_error_time"] is not None
+    assert last_error_sensor.native_value is not None
+    assert "ModbusTimeoutError" in last_error_sensor.native_value
+    assert last_error_time_sensor.native_value is not None
 
 
 async def test_total_sensor_restore_data_parsing(hass: HomeAssistant) -> None:

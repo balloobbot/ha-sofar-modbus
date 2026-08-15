@@ -16,9 +16,8 @@ actually failed this poll go unavailable — not all of them.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from enum import IntEnum
-from typing import Any
 
 from homeassistant.components.sensor import (
     RestoreSensor,
@@ -86,6 +85,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_
         if description.component in served  # not served by this inverter type otherwise
     ]
     entities.append(SofarCommunicationHealthSensor(coordinator))
+    entities.append(SofarCommunicationHealthSuccessRateSensor(coordinator))
+    entities.append(SofarCommunicationHealthLastErrorSensor(coordinator))
+    entities.append(SofarCommunicationHealthLastErrorTimeSensor(coordinator))
     async_add_entities(entities)
 
 
@@ -120,13 +122,64 @@ class SofarCommunicationHealthSensor(CoordinatorEntity[SofarDataUpdateCoordinato
             return "degraded"
         return "poor"
 
+
+class SofarCommunicationHealthSuccessRateSensor(CoordinatorEntity[SofarDataUpdateCoordinator], SensorEntity):
+    """Same rolling window as `SofarCommunicationHealthSensor`, as a number instead of a bucket."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "communication_health_success_rate"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        serial = coordinator.device.serial_number
+        self._attr_unique_id = f"{serial}_communication_health_success_rate"
+        self._attr_device_info = build_device_info(coordinator)
+
     @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        return {
-            "success_rate": self.coordinator.success_rate,
-            "last_error": self.coordinator.last_error,
-            "last_error_time": self.coordinator.last_error_time,
-        }
+    def native_value(self) -> float | None:
+        return self.coordinator.success_rate
+
+
+class SofarCommunicationHealthLastErrorSensor(CoordinatorEntity[SofarDataUpdateCoordinator], SensorEntity):
+    """Type + message of the most recent poll error, if any. Not cleared by a later success."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "communication_health_last_error"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
+
+    def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        serial = coordinator.device.serial_number
+        self._attr_unique_id = f"{serial}_communication_health_last_error"
+        self._attr_device_info = build_device_info(coordinator)
+
+    @property
+    def native_value(self) -> str | None:
+        return self.coordinator.last_error
+
+
+class SofarCommunicationHealthLastErrorTimeSensor(CoordinatorEntity[SofarDataUpdateCoordinator], SensorEntity):
+    """When the most recent poll error (see `SofarCommunicationHealthLastErrorSensor`) happened."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "communication_health_last_error_time"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_entity_registry_enabled_default = False
+
+    def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        serial = coordinator.device.serial_number
+        self._attr_unique_id = f"{serial}_communication_health_last_error_time"
+        self._attr_device_info = build_device_info(coordinator)
+
+    @property
+    def native_value(self) -> datetime | None:
+        return self.coordinator.last_error_time
 
 
 class SofarSensor(SofarEntity, SensorEntity):
@@ -819,6 +872,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="reactive_power_offgrid_total",
         device_class=SensorDeviceClass.REACTIVE_POWER,
         native_unit_of_measurement=UnitOfReactivePower.VOLT_AMPERE_REACTIVE,
+        state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
         suggested_display_precision=2,
     ),
@@ -845,6 +899,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_voltage",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        state_class=SensorStateClass.MEASUREMENT,
     ),
     SofarSensorDescription(
         key="offgrid_voltage_l1",
@@ -852,6 +907,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_voltage_l1",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        state_class=SensorStateClass.MEASUREMENT,
     ),
     SofarSensorDescription(
         key="offgrid_current_output",
@@ -859,6 +915,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_current_output",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
     ),
     SofarSensorDescription(
@@ -867,6 +924,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_current_output_l1",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
     ),
     SofarSensorDescription(
@@ -875,6 +933,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_active_power_output",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
+        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
     ),
     SofarSensorDescription(
@@ -883,6 +942,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_active_power_output_l1",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
+        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
     ),
     SofarSensorDescription(
@@ -891,6 +951,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_reactive_power_output",
         device_class=SensorDeviceClass.REACTIVE_POWER,
         native_unit_of_measurement=UnitOfReactivePower.VOLT_AMPERE_REACTIVE,
+        state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
         suggested_display_precision=2,
     ),
@@ -900,6 +961,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_reactive_power_output_l1",
         device_class=SensorDeviceClass.REACTIVE_POWER,
         native_unit_of_measurement=UnitOfReactivePower.VOLT_AMPERE_REACTIVE,
+        state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
         suggested_display_precision=2,
     ),
@@ -909,6 +971,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_apparent_power_output",
         device_class=SensorDeviceClass.APPARENT_POWER,
         native_unit_of_measurement=UnitOfApparentPower.VOLT_AMPERE,
+        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
     ),
     SofarSensorDescription(
@@ -917,6 +980,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_apparent_power_output_l1",
         device_class=SensorDeviceClass.APPARENT_POWER,
         native_unit_of_measurement=UnitOfApparentPower.VOLT_AMPERE,
+        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
     ),
     SofarSensorDescription(
@@ -925,6 +989,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_loadpeakratio",
         device_class=SensorDeviceClass.APPARENT_POWER,
         native_unit_of_measurement=UnitOfApparentPower.VOLT_AMPERE,
+        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
     ),
     SofarSensorDescription(
@@ -933,6 +998,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_loadpeakratio_l1",
         device_class=SensorDeviceClass.APPARENT_POWER,
         native_unit_of_measurement=UnitOfApparentPower.VOLT_AMPERE,
+        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
     ),
     SofarSensorDescription(
@@ -941,6 +1007,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_voltage_l2",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        state_class=SensorStateClass.MEASUREMENT,
     ),
     SofarSensorDescription(
         key="offgrid_current_output_l2",
@@ -948,6 +1015,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_current_output_l2",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
     ),
     SofarSensorDescription(
@@ -956,6 +1024,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_active_power_output_l2",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
+        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
     ),
     SofarSensorDescription(
@@ -964,6 +1033,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_reactive_power_output_l2",
         device_class=SensorDeviceClass.REACTIVE_POWER,
         native_unit_of_measurement=UnitOfReactivePower.VOLT_AMPERE_REACTIVE,
+        state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
         suggested_display_precision=2,
     ),
@@ -973,6 +1043,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_apparent_power_output_l2",
         device_class=SensorDeviceClass.APPARENT_POWER,
         native_unit_of_measurement=UnitOfApparentPower.VOLT_AMPERE,
+        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
     ),
     SofarSensorDescription(
@@ -981,6 +1052,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_loadpeakratio_l2",
         device_class=SensorDeviceClass.APPARENT_POWER,
         native_unit_of_measurement=UnitOfApparentPower.VOLT_AMPERE,
+        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
     ),
     SofarSensorDescription(
@@ -989,6 +1061,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_voltage_l3",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        state_class=SensorStateClass.MEASUREMENT,
     ),
     SofarSensorDescription(
         key="offgrid_current_output_l3",
@@ -996,6 +1069,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_current_output_l3",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
     ),
     SofarSensorDescription(
@@ -1004,6 +1078,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_active_power_output_l3",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
+        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
     ),
     SofarSensorDescription(
@@ -1012,6 +1087,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_reactive_power_output_l3",
         device_class=SensorDeviceClass.REACTIVE_POWER,
         native_unit_of_measurement=UnitOfReactivePower.VOLT_AMPERE_REACTIVE,
+        state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
         suggested_display_precision=2,
     ),
@@ -1021,6 +1097,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_apparent_power_output_l3",
         device_class=SensorDeviceClass.APPARENT_POWER,
         native_unit_of_measurement=UnitOfApparentPower.VOLT_AMPERE,
+        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
     ),
     SofarSensorDescription(
@@ -1029,6 +1106,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_loadpeakratio_l3",
         device_class=SensorDeviceClass.APPARENT_POWER,
         native_unit_of_measurement=UnitOfApparentPower.VOLT_AMPERE,
+        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
     ),
     SofarSensorDescription(
@@ -1037,6 +1115,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_voltage_output_l1n",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        state_class=SensorStateClass.MEASUREMENT,
     ),
     SofarSensorDescription(
         key="offgrid_current_output_l1n",
@@ -1044,6 +1123,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_current_output_l1n",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
     ),
     SofarSensorDescription(
@@ -1052,6 +1132,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_active_power_output_l1n",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
+        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
     ),
     SofarSensorDescription(
@@ -1060,6 +1141,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_voltage_output_l2n",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        state_class=SensorStateClass.MEASUREMENT,
     ),
     SofarSensorDescription(
         key="offgrid_current_output_l2n",
@@ -1067,6 +1149,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_current_output_l2n",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
     ),
     SofarSensorDescription(
@@ -1075,6 +1158,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         translation_key="offgrid_active_power_output_l2n",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
+        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
     ),
     SofarSensorDescription(

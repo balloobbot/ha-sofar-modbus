@@ -388,6 +388,20 @@ async def test_pre_identified_device_initializes_tiers_in_memory() -> None:
     print("pre-identified-device-initializes-tiers-in-memory: PASSED")
 
 
+def test_offgrid_output_components_are_volatile() -> None:
+    """Regression guard for issue #46: an omitted state_class on a sensor
+    description silently opts its whole component out of the fast poll tier.
+    offgrid_single_phase/offgrid_three_phase are live electrical output and
+    must land in _volatile_components()'s fast tier.
+    """
+    from custom_components.sofar_modbus.coordinator import _volatile_components
+
+    volatile = _volatile_components()
+    assert "offgrid_single_phase" in volatile
+    assert "offgrid_three_phase" in volatile
+    print("offgrid-output-components-are-volatile: PASSED")
+
+
 async def main() -> None:
     await test_retry_recovers_a_transient_failure()
     await test_a_failure_that_survives_retry_is_tracked_and_leaves_others_alone()
@@ -403,6 +417,7 @@ async def main() -> None:
     await test_refusal_on_first_component_is_contained()
     await test_first_poll_only_polls_fast_tier_and_exposes_all_served_components()
     await test_pre_identified_device_initializes_tiers_in_memory()
+    test_offgrid_output_components_are_volatile()
     print("ALL COORDINATOR TESTS PASSED")
 
 
