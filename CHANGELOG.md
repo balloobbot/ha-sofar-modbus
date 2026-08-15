@@ -10,6 +10,41 @@ and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-15
+
+### Changed
+
+- **Entity Translations**: sensor entities (234 rows) and select-platform options now use
+  Home Assistant's `translation_key` mechanism instead of hardcoded English `name=`/option
+  text, matching the pattern Core requires for new integrations.
+  **⚠️ Breaking for automations/scripts**: select-platform state values changed from
+  human-readable text to machine slugs (e.g. `"Enabled - Feed-in limitation"` →
+  `enabled_feed_in_limitation`, `"Self Use"` → `self_use`), and the `communication_health`
+  sensor's states changed from `Good`/`Degraded`/`Poor`/`Unknown` to lowercase
+  (`good`/`degraded`/`poor`/`unknown`). Displayed text in the UI is unchanged — only the
+  underlying stored value did. If you have automations, scripts, or dashboard conditions
+  matching against the old raw text, update them to the new slugs.
+- **Diagnostics Redaction**: the inverter serial number is now redacted in diagnostics
+  downloads (they get attached to public GitHub issues). A new `serial_prefix` field keeps
+  just the first 10 characters — enough to identify or extend `sofar-modbus`'s
+  serial-prefix table from an unrecognized inverter's diagnostics dump — without keeping
+  the rest of what is otherwise a unique per-device identifier.
+- **Manifest**: `integration_type` corrected from `hub` to `device` — one physical inverter
+  per config entry, not a bridge to multiple independent devices.
+
+### Fixed
+
+- **Library Coupling**: replaced a reach-in into `sofar-modbus`'s private
+  `SofarInverter._polled` attribute (used to skip a redundant Modbus read on startup for an
+  already-identified device) with its new public `SofarInverter.prime()` method. Requires
+  `sofar-modbus>=0.1.7`.
+
+### Verification
+
+- Full suite (`pytest` — 70 passed, including `tests/lib/test_smoke.py` newly wired into
+  pytest collection — standalone `tests/lib/*.py` scripts, `ruff` format/lint, `mypy`) green
+  on `a0f6099`, verified against the real released `sofar-modbus==0.1.7` from PyPI.
+
 ## [0.3.16] - 2026-08-15
 
 ### Changed
