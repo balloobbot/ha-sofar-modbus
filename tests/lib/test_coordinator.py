@@ -340,18 +340,15 @@ async def test_first_poll_only_polls_fast_tier_and_exposes_all_served_components
 
 
 async def test_pre_identified_device_initializes_tiers_in_memory() -> None:
-    from sofar_modbus.modern.device import _POLLED, identify
-    from sofar_modbus.variants import matches
+    from sofar_modbus.modern.device import identify
 
     unit = MockModbusConnection().for_unit(1)
     # Note: no serial seeded in holding registers!
     serial = "SP1XXES100XX"
     inverter_type, model = identify(serial)
     device = SofarInverter(unit, inverter_type=inverter_type)
-    device.serial_number = serial
-    device.model = model
     assert device.inverter_type is not None
-    device._polled = [name for name in _POLLED if matches(device.inverter_type, getattr(device, name).applies_to)]
+    device.prime(serial, model)
 
     # Seed fast tier registers
     unit.holding[0x0404] = 2
@@ -372,8 +369,9 @@ async def test_pre_identified_device_initializes_tiers_in_memory() -> None:
     from custom_components.sofar_modbus.coordinator import _volatile_components
 
     volatile = _volatile_components()
-    coordinator._fast = {name: getattr(device, name) for name in device._polled if name in volatile}
-    coordinator._slow = {name: getattr(device, name) for name in device._polled if name not in volatile}
+    assert device.polled_components is not None
+    coordinator._fast = {name: getattr(device, name) for name in device.polled_components if name in volatile}
+    coordinator._slow = {name: getattr(device, name) for name in device.polled_components if name not in volatile}
 
     assert "grid" in coordinator.served_components
     assert "energy" in coordinator.served_components

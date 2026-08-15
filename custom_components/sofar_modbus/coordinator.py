@@ -114,10 +114,10 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
         self._cycle = 0
         self._fast: dict[str, SofarComponentBase] | None = None
         self._slow: dict[str, SofarComponentBase] | None = None
-        if self.device._polled is not None:
+        if self.device.polled_components is not None:
             volatile = _volatile_components()
-            self._fast = {name: getattr(self.device, name) for name in self.device._polled if name in volatile}
-            self._slow = {name: getattr(self.device, name) for name in self.device._polled if name not in volatile}
+            self._fast = {name: getattr(self.device, name) for name in self.device.polled_components if name in volatile}
+            self._slow = {name: getattr(self.device, name) for name in self.device.polled_components if name not in volatile}
         self._force_slow_tier = False
         self.pending: dict[str, Any] = {}
 
@@ -142,8 +142,8 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
     @property
     def served_components(self) -> frozenset[str]:
         """All component names served by this inverter type."""
-        if self.device._polled is not None:
-            return frozenset(self.device._polled)
+        if self.device.polled_components is not None:
+            return frozenset(self.device.polled_components)
         if self.data is not None:
             return frozenset(self.data.updated | set(self.data.failed))
         return frozenset()
@@ -209,12 +209,12 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
         and refresh the fast tier on startup.
         """
         if self._fast is None:
-            if self.device._polled is None:
+            if self.device.polled_components is None:
                 await self.device.async_setup()
             if not self.device.inverter_type:
                 return UpdateReport(updated={"identity"}, failed={})
             volatile = _volatile_components()
-            polled = self.device._polled or ()
+            polled = self.device.polled_components or ()
             self._fast = {name: getattr(self.device, name) for name in polled if name in volatile}
             self._slow = {name: getattr(self.device, name) for name in polled if name not in volatile}
         components_to_poll = self._fast if self._fast else dict(self._slow or {})

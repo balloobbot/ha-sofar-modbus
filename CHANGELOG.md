@@ -10,6 +10,11 @@ and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged
 
 ## [Unreleased]
 
+### Changed
+
+- Stopped reaching into `sofar-modbus`'s private `_polled` attribute, now that it exposes
+  `polled_components` publicly.
+
 ## [0.5.1] - 2026-08-15
 
 ### Fixed
