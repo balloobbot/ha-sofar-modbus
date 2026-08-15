@@ -18,6 +18,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime
 from enum import IntEnum
+from typing import cast
 
 from homeassistant.components.sensor import (
     RestoreSensor,
@@ -28,6 +29,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.const import (
     PERCENTAGE,
+    EntityCategory,
     UnitOfApparentPower,
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
@@ -39,7 +41,6 @@ from homeassistant.const import (
     UnitOfTime,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -202,7 +203,7 @@ class SofarSensor(SofarEntity, SensorEntity):
         # in its `options`, rather than showing a bare number.
         if isinstance(value, IntEnum):
             return _enum_label(value.name)
-        return value
+        return cast("str | int | float | date | None", value)
 
 
 class SofarTotalSensor(SofarEntity, RestoreSensor):

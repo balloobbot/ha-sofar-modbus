@@ -205,6 +205,32 @@ async def test_communication_health_sensor(hass: HomeAssistant) -> None:
     assert last_error_time_sensor.native_value is not None
 
 
+async def test_communication_health_sensor_degraded_bucket(hass: HomeAssistant) -> None:
+    """Test the communication_health sensor reports "degraded" for a success rate in [80, 100)."""
+    mock_conn = MockModbusConnection()
+    unit = mock_conn.for_unit(1)
+    _seed_pv_inverter(unit)
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="SS2ES104N5S445",
+        data=MOCK_CONFIG,
+    )
+    entry.add_to_hass(hass)
+
+    with patch("custom_components.sofar_modbus.build_connection", return_value=mock_conn):
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done(wait_background_tasks=True)
+
+    coordinator = entry.runtime_data
+    coordinator._poll_outcomes.clear()
+    coordinator._poll_outcomes.extend([True] * 9 + [False])  # 90% success -> "degraded" bucket, not "good"/"poor"
+
+    health_sensor = SofarCommunicationHealthSensor(coordinator)
+    assert coordinator.success_rate == 90.0
+    assert health_sensor.native_value == "degraded"
+
+
 async def test_communication_health_entities_stay_available_on_dead_link(hass: HomeAssistant) -> None:
     """Test the communication_health family stays available even when the whole link is down.
 
