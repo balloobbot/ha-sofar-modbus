@@ -37,7 +37,7 @@ from __future__ import annotations
 import logging
 from collections import deque
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, TypeVar, cast
 
 from homeassistant.components.sensor import SensorStateClass
 from homeassistant.config_entries import ConfigEntry
@@ -56,6 +56,8 @@ _SLOW_TIER_EVERY_N_CYCLES = 12  # ~60s at the 5s base scan interval
 _HEALTH_WINDOW = 60  # ~5min at the 5s base scan interval
 
 type SofarConfigEntry = ConfigEntry[SofarDataUpdateCoordinator]
+
+_T = TypeVar("_T")
 
 
 def _volatile_components() -> frozenset[str]:
@@ -146,7 +148,7 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
             return frozenset(self.data.updated | set(self.data.failed))
         return frozenset()
 
-    def pending_or_live(self, key: str, live_value: Any) -> Any:
+    def pending_or_live(self, key: str, live_value: _T) -> _T:
         """What a staged number/select/switch entity should show right now.
 
         The value the user last set this session, if any and if it hasn't
@@ -155,7 +157,7 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
         itself (no flash wear from writing them often), so there's nothing
         to persist across a restart either.
         """
-        return self.pending.get(key, live_value)
+        return cast("_T", self.pending.get(key, live_value))
 
     async def async_request_refresh(self) -> None:
         self._force_slow_tier = True
