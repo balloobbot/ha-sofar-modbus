@@ -150,11 +150,11 @@ async def test_remote_switch_writes_immediately() -> None:
     _, coordinator = await _device_and_coordinator()
     entity = RemoteSwitchSelect(coordinator)
     _mute_state_writes(entity)
-    assert entity.current_option == "On"
+    assert entity.current_option == "on"
 
     events: list[WriteEvent] = []
     coordinator.device.remote._unit.on_write(events.append)  # type: ignore[attr-defined]
-    await entity.async_select_option("Off")
+    await entity.async_select_option("off")
     assert [(e.address, e.values) for e in events] == [(0x1104, [0])]
     assert coordinator._refresh_calls == 1
     print("remote-switch-writes-immediately: PASSED")
@@ -169,14 +169,14 @@ async def test_feedin_select_and_number_only_stage() -> None:
 
     events: list[WriteEvent] = []
     coordinator.device.feed_in._unit.on_write(events.append)  # type: ignore[attr-defined]
-    await mode_entity.async_select_option("Enabled - Feed-in limitation")
+    await mode_entity.async_select_option("enabled_feed_in_limitation")
     await power_entity.async_set_native_value(3000)
     assert not events, "staging must not touch the device"
     assert coordinator.pending == {
         "feedin_limitation_mode": FeedinLimitationMode.ENABLED_FEED_IN_LIMITATION,
         "feedin_max_power": 3000,
     }
-    assert mode_entity.current_option == "Enabled - Feed-in limitation"
+    assert mode_entity.current_option == "enabled_feed_in_limitation"
     assert power_entity.native_value == 3000
     print("feedin-select-and-number-only-stage: PASSED")
 
@@ -285,11 +285,11 @@ async def test_charger_use_mode_writes_immediately() -> None:
     _, coordinator = await _hybrid_device_and_coordinator()
     entity = ChargerUseModeSelect(coordinator)
     _mute_state_writes(entity)
-    assert entity.current_option == "Time Of Use"
+    assert entity.current_option == "time_of_use"
 
     events: list[WriteEvent] = []
     coordinator.device.charger._unit.on_write(events.append)  # type: ignore[attr-defined]
-    await entity.async_select_option("Peak Cut Mode")
+    await entity.async_select_option("peak_cut_mode")
     assert [(e.address, e.values) for e in events] == [(0x1110, [int(ChargerUseMode.PEAK_CUT_MODE)])]
     assert coordinator._refresh_calls == 1
     print("charger-use-mode-writes-immediately: PASSED")
@@ -299,11 +299,11 @@ async def test_eps_mode_writes_immediately() -> None:
     _, coordinator = await _hybrid_device_and_coordinator()
     entity = EpsModeSelect(coordinator)
     _mute_state_writes(entity)
-    assert entity.current_option == "Turn On - Enable Cold Start"
+    assert entity.current_option == "turn_on_enable_cold_start"
 
     events: list[WriteEvent] = []
     coordinator.device.eps._unit.on_write(events.append)  # type: ignore[attr-defined]
-    await entity.async_select_option("Turn Off")
+    await entity.async_select_option("turn_off")
     assert [(e.address, e.values) for e in events] == [(0x1029, [0, 0])]
     assert coordinator._refresh_calls == 1
     print("eps-mode-writes-immediately: PASSED")
@@ -318,14 +318,14 @@ async def test_passive_timeout_select_and_number_only_stage() -> None:
 
     events: list[WriteEvent] = []
     coordinator.device.passive._unit.on_write(events.append)  # type: ignore[attr-defined]
-    await action_entity.async_select_option("Force Standby")
+    await action_entity.async_select_option("force_standby")
     await timeout_entity.async_set_native_value(300)
     assert not events, "staging must not touch the device"
     assert coordinator.pending == {
         "passive_mode_timeout_action": PassiveModeTimeoutAction.FORCE_STANDBY,
         "passive_mode_timeout": 300,
     }
-    assert action_entity.current_option == "Force Standby"
+    assert action_entity.current_option == "force_standby"
     assert timeout_entity.native_value == 300
     print("passive-timeout-select-and-number-only-stage: PASSED")
 

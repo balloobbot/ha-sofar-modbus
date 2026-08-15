@@ -3,6 +3,17 @@
 Layering (see modbus-connection's integration guide): this module owns the
 ModbusConnection and the coordinator; sofar-modbus is the HA-free device
 library that does the actual register work.
+
+Note on the ``sofar_modbus`` imports below: that's the third-party
+``sofar-modbus`` PyPI library, not a self-import — this integration's own
+package is ``custom_components.sofar_modbus``, a distinct namespace despite
+the identical name. Confusing to read, but harmless: Home Assistant never
+puts ``custom_components/`` on ``sys.path`` as a top-level package. Renaming
+this integration's domain to avoid the collision was considered and
+rejected — it would break every existing install's entity_ids and Energy
+Dashboard history, which this project already goes out of its way to
+protect (see the solax_modbus migration notes in README and the 0.3.14
+restore-across-reboots work).
 """
 
 from __future__ import annotations
@@ -13,8 +24,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 
-from sofar_modbus.modern.device import _POLLED, SofarInverter, identify
-from sofar_modbus.variants import matches
+from sofar_modbus.modern.device import SofarInverter, identify
 
 from .connection import build_connection, unit_id
 from .const import CONF_READ_EPS, DEFAULT_SCAN_INTERVAL, DOMAIN
@@ -34,9 +44,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry) -> boo
     inverter_type, model = identify(serial) if serial else (None, None)
     device = SofarInverter(unit, inverter_type=inverter_type, read_eps=entry.data.get(CONF_READ_EPS, False))
     if serial and inverter_type and device.inverter_type is not None:
-        device.serial_number = serial
-        device.model = model
-        device._polled = [name for name in _POLLED if matches(device.inverter_type, getattr(device, name).applies_to)]
+        device.prime(serial, model)
 
     coordinator = SofarDataUpdateCoordinator(hass, entry, connection, device, DEFAULT_SCAN_INTERVAL)
 

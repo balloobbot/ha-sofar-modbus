@@ -10,6 +10,13 @@ coordinator.py's ``pending_or_live``.
 
 Charger Use Mode and EPS Mode are HYBRID-only and have no HYBRID hardware to
 verify against yet — see README's Status section.
+
+The ``_XXX_OPTIONS`` dicts below map each device enum member to the
+machine-readable option slug HA's state machine and ``select_option`` service
+calls actually see; the human-readable text lives in strings.json's
+``entity.select.<translation_key>.state`` block instead, so the frontend can
+translate it. See homeassistant/components/select's option handling and
+sensor.py's device_class=ENUM sensors for the same pattern.
 """
 
 from __future__ import annotations
@@ -20,40 +27,41 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from modbus_connection import ModbusError
 
+# The PyPI library, not a self-import — see __init__.py
 from sofar_modbus.modern import ChargerUseMode, EpsControlMode, FeedinLimitationMode, PassiveModeTimeoutAction, RemoteSwitchOnOff
 
 from .coordinator import SofarConfigEntry, SofarDataUpdateCoordinator
 from .entity import SofarEntity
 
 _REMOTE_SWITCH_OPTIONS = {
-    RemoteSwitchOnOff.OFF: "Off",
-    RemoteSwitchOnOff.ON: "On",
+    RemoteSwitchOnOff.OFF: "off",
+    RemoteSwitchOnOff.ON: "on",
 }
 
 _FEEDIN_LIMITATION_OPTIONS = {
-    FeedinLimitationMode.DISABLED: "Disabled",
-    FeedinLimitationMode.ENABLED_FEED_IN_LIMITATION: "Enabled - Feed-in limitation",
-    FeedinLimitationMode.ENABLED_3_PHASE_LIMIT: "Enabled - 3-phase limit",
+    FeedinLimitationMode.DISABLED: "disabled",
+    FeedinLimitationMode.ENABLED_FEED_IN_LIMITATION: "enabled_feed_in_limitation",
+    FeedinLimitationMode.ENABLED_3_PHASE_LIMIT: "enabled_3_phase_limit",
 }
 
 _CHARGER_USE_MODE_OPTIONS = {
-    ChargerUseMode.SELF_USE: "Self Use",
-    ChargerUseMode.TIME_OF_USE: "Time Of Use",
-    ChargerUseMode.TIMING_MODE: "Timing Mode",
-    ChargerUseMode.PASSIVE_MODE: "Passive Mode",
-    ChargerUseMode.PEAK_CUT_MODE: "Peak Cut Mode",
-    ChargerUseMode.OFF_GRID_MODE: "Off Grid Mode",
+    ChargerUseMode.SELF_USE: "self_use",
+    ChargerUseMode.TIME_OF_USE: "time_of_use",
+    ChargerUseMode.TIMING_MODE: "timing_mode",
+    ChargerUseMode.PASSIVE_MODE: "passive_mode",
+    ChargerUseMode.PEAK_CUT_MODE: "peak_cut_mode",
+    ChargerUseMode.OFF_GRID_MODE: "off_grid_mode",
 }
 
 _EPS_MODE_OPTIONS = {
-    EpsControlMode.TURN_OFF: "Turn Off",
-    EpsControlMode.TURN_ON_PROHIBIT_COLD_START: "Turn On - Prohibit Cold Start",
-    EpsControlMode.TURN_ON_ENABLE_COLD_START: "Turn On - Enable Cold Start",
+    EpsControlMode.TURN_OFF: "turn_off",
+    EpsControlMode.TURN_ON_PROHIBIT_COLD_START: "turn_on_prohibit_cold_start",
+    EpsControlMode.TURN_ON_ENABLE_COLD_START: "turn_on_enable_cold_start",
 }
 
 _PASSIVE_TIMEOUT_ACTION_OPTIONS = {
-    PassiveModeTimeoutAction.FORCE_STANDBY: "Force Standby",
-    PassiveModeTimeoutAction.RETURN_TO_PREVIOUS_MODE: "Return To Previous Mode",
+    PassiveModeTimeoutAction.FORCE_STANDBY: "force_standby",
+    PassiveModeTimeoutAction.RETURN_TO_PREVIOUS_MODE: "return_to_previous_mode",
 }
 
 

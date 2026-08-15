@@ -98,10 +98,10 @@ class SofarCommunicationHealthSensor(CoordinatorEntity[SofarDataUpdateCoordinato
     """
 
     _attr_has_entity_name = True
-    _attr_name = "Communication Health"
+    _attr_translation_key = "communication_health"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_device_class = SensorDeviceClass.ENUM
-    _attr_options = ["Good", "Degraded", "Poor", "Unknown"]
+    _attr_options = ["good", "degraded", "poor", "unknown"]
 
     def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
         super().__init__(coordinator)
@@ -113,12 +113,12 @@ class SofarCommunicationHealthSensor(CoordinatorEntity[SofarDataUpdateCoordinato
     def native_value(self) -> str:
         rate = self.coordinator.success_rate
         if rate is None:
-            return "Unknown"
+            return "unknown"
         if rate == 100:
-            return "Good"
+            return "good"
         if rate >= 80:
-            return "Degraded"
-        return "Poor"
+            return "degraded"
+        return "poor"
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -231,7 +231,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="system_state",
         component="state",
-        name="System State",
+        translation_key="system_state",
         device_class=SensorDeviceClass.ENUM,
         options=[
             "Waiting",
@@ -247,86 +247,86 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="fault_1",
         component="state",
-        name="Fault 1",
+        translation_key="fault_1",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SofarSensorDescription(
         key="fault_2",
         component="state",
-        name="Fault 2",
+        translation_key="fault_2",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SofarSensorDescription(
         key="fault_3",
         component="state",
-        name="Fault 3",
+        translation_key="fault_3",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SofarSensorDescription(
         key="fault_4",
         component="state",
-        name="Fault 4",
+        translation_key="fault_4",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SofarSensorDescription(
         key="fault_5",
         component="state",
-        name="Fault 5",
+        translation_key="fault_5",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SofarSensorDescription(
         key="fault_6",
         component="state",
-        name="Fault 6",
+        translation_key="fault_6",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SofarSensorDescription(
         key="fault_7",
         component="state",
-        name="Fault 7",
+        translation_key="fault_7",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SofarSensorDescription(
         key="fault_8",
         component="state",
-        name="Fault 8",
+        translation_key="fault_8",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SofarSensorDescription(
         key="fault_9",
         component="state",
-        name="Fault 9",
+        translation_key="fault_9",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SofarSensorDescription(
         key="fault_10",
         component="state",
-        name="Fault 10",
+        translation_key="fault_10",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SofarSensorDescription(
         key="fault_11",
         component="state",
-        name="Fault 11",
+        translation_key="fault_11",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SofarSensorDescription(
         key="fault_12",
         component="state",
-        name="Fault 12",
+        translation_key="fault_12",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SofarSensorDescription(
         key="waiting_time",
         component="state",
-        name="Waiting Time",
+        translation_key="waiting_time",
         native_unit_of_measurement=UnitOfTime.SECONDS,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SofarSensorDescription(
         key="inverter_temperature_1",
         component="state",
-        name="Inverter Temperature 1",
+        translation_key="inverter_temperature_1",
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
@@ -335,7 +335,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="inverter_temperature_2",
         component="state",
-        name="Inverter Temperature 2",
+        translation_key="inverter_temperature_2",
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
@@ -344,7 +344,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="heatsink_temperature_1",
         component="state",
-        name="Heatsink Temperature 1",
+        translation_key="heatsink_temperature_1",
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
@@ -353,7 +353,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="heatsink_temperature_2",
         component="state",
-        name="Heatsink Temperature 2",
+        translation_key="heatsink_temperature_2",
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
@@ -362,7 +362,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="module_temperature_1",
         component="state",
-        name="Module Temperature 1",
+        translation_key="module_temperature_1",
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
@@ -371,7 +371,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="module_temperature_2",
         component="state",
-        name="Module Temperature 2",
+        translation_key="module_temperature_2",
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
@@ -380,7 +380,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="rtc",
         component="identity",
-        name="System Time",
+        translation_key="rtc",
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:clock",
         entity_registry_enabled_default=False,
@@ -388,26 +388,26 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="serial_number",
         component="identity",
-        name="Serial Number",
+        translation_key="serial_number",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SofarSensorDescription(
         key="hardware_version",
         component="identity",
-        name="Hardware Version",
+        translation_key="hardware_version",
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
     SofarSensorDescription(
         key="software_version",
         component="identity",
-        name="Software Version",
+        translation_key="software_version",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SofarSensorDescription(
         key="grid_frequency",
         component="grid",
-        name="Grid Frequency",
+        translation_key="grid_frequency",
         device_class=SensorDeviceClass.FREQUENCY,
         native_unit_of_measurement=UnitOfFrequency.HERTZ,
         suggested_display_precision=2,
@@ -415,7 +415,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="active_power_output_total",
         component="grid",
-        name="Active Power Output Total",
+        translation_key="active_power_output_total",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -424,7 +424,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="reactive_power_output_total",
         component="grid",
-        name="Reactive Power Output Total",
+        translation_key="reactive_power_output_total",
         device_class=SensorDeviceClass.REACTIVE_POWER,
         native_unit_of_measurement=UnitOfReactivePower.VOLT_AMPERE_REACTIVE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -434,7 +434,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="apparent_power_output_total",
         component="grid",
-        name="Apparent Power Output Total",
+        translation_key="apparent_power_output_total",
         device_class=SensorDeviceClass.APPARENT_POWER,
         native_unit_of_measurement=UnitOfApparentPower.VOLT_AMPERE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -443,7 +443,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="active_power_pcc_total",
         component="grid",
-        name="Active Power PCC Total",
+        translation_key="active_power_pcc_total",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -452,7 +452,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="reactive_power_pcc_total",
         component="grid",
-        name="Reactive Power PCC Total",
+        translation_key="reactive_power_pcc_total",
         device_class=SensorDeviceClass.REACTIVE_POWER,
         native_unit_of_measurement=UnitOfReactivePower.VOLT_AMPERE_REACTIVE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -462,7 +462,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="apparent_power_pcc_total",
         component="grid",
-        name="Apparent Power PCC Total",
+        translation_key="apparent_power_pcc_total",
         device_class=SensorDeviceClass.APPARENT_POWER,
         native_unit_of_measurement=UnitOfApparentPower.VOLT_AMPERE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -471,14 +471,14 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="voltage_l1",
         component="grid",
-        name="Voltage L1",
+        translation_key="voltage_l1",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="current_output_l1",
         component="grid",
-        name="Current Output L1",
+        translation_key="current_output_l1",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -486,7 +486,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="active_power_output_l1",
         component="grid",
-        name="Active Power Output L1",
+        translation_key="active_power_output_l1",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         suggested_display_precision=2,
@@ -494,7 +494,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="reactive_power_output_l1",
         component="grid",
-        name="Reactive Power Output L1",
+        translation_key="reactive_power_output_l1",
         device_class=SensorDeviceClass.REACTIVE_POWER,
         native_unit_of_measurement=UnitOfReactivePower.VOLT_AMPERE_REACTIVE,
         entity_registry_enabled_default=False,
@@ -503,7 +503,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="power_factor_output_l1",
         component="grid",
-        name="Power Factor Output L1",
+        translation_key="power_factor_output_l1",
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
@@ -511,7 +511,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="current_pcc_l1",
         component="grid",
-        name="Current PCC L1",
+        translation_key="current_pcc_l1",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -519,7 +519,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="active_power_pcc_l1",
         component="grid",
-        name="Active Power PCC L1",
+        translation_key="active_power_pcc_l1",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         suggested_display_precision=2,
@@ -527,7 +527,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="reactive_power_pcc_l1",
         component="grid",
-        name="Reactive Power PCC L1",
+        translation_key="reactive_power_pcc_l1",
         device_class=SensorDeviceClass.REACTIVE_POWER,
         native_unit_of_measurement=UnitOfReactivePower.VOLT_AMPERE_REACTIVE,
         entity_registry_enabled_default=False,
@@ -536,7 +536,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="power_factor_pcc_l1",
         component="grid",
-        name="Power Factor PCC L1",
+        translation_key="power_factor_pcc_l1",
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
@@ -544,14 +544,14 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="voltage_l2",
         component="grid",
-        name="Voltage L2",
+        translation_key="voltage_l2",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="current_output_l2",
         component="grid",
-        name="Current Output L2",
+        translation_key="current_output_l2",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -559,7 +559,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="active_power_output_l2",
         component="grid",
-        name="Active Power Output L2",
+        translation_key="active_power_output_l2",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         suggested_display_precision=2,
@@ -567,7 +567,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="reactive_power_output_l2",
         component="grid",
-        name="Reactive Power Output L2",
+        translation_key="reactive_power_output_l2",
         device_class=SensorDeviceClass.REACTIVE_POWER,
         native_unit_of_measurement=UnitOfReactivePower.VOLT_AMPERE_REACTIVE,
         entity_registry_enabled_default=False,
@@ -576,7 +576,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="power_factor_output_l2",
         component="grid",
-        name="Power Factor Output L2",
+        translation_key="power_factor_output_l2",
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
@@ -584,7 +584,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="current_pcc_l2",
         component="grid",
-        name="Current PCC L2",
+        translation_key="current_pcc_l2",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -592,7 +592,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="active_power_pcc_l2",
         component="grid",
-        name="Active Power PCC L2",
+        translation_key="active_power_pcc_l2",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         suggested_display_precision=2,
@@ -600,7 +600,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="reactive_power_pcc_l2",
         component="grid",
-        name="Reactive Power PCC L2",
+        translation_key="reactive_power_pcc_l2",
         device_class=SensorDeviceClass.REACTIVE_POWER,
         native_unit_of_measurement=UnitOfReactivePower.VOLT_AMPERE_REACTIVE,
         entity_registry_enabled_default=False,
@@ -609,7 +609,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="power_factor_pcc_l2",
         component="grid",
-        name="Power Factor PCC L2",
+        translation_key="power_factor_pcc_l2",
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
@@ -617,14 +617,14 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="voltage_l3",
         component="grid",
-        name="Voltage L3",
+        translation_key="voltage_l3",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="current_output_l3",
         component="grid",
-        name="Current Output L3",
+        translation_key="current_output_l3",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -632,7 +632,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="active_power_output_l3",
         component="grid",
-        name="Active Power Output L3",
+        translation_key="active_power_output_l3",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         suggested_display_precision=2,
@@ -640,7 +640,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="reactive_power_output_l3",
         component="grid",
-        name="Reactive Power Output L3",
+        translation_key="reactive_power_output_l3",
         device_class=SensorDeviceClass.REACTIVE_POWER,
         native_unit_of_measurement=UnitOfReactivePower.VOLT_AMPERE_REACTIVE,
         entity_registry_enabled_default=False,
@@ -649,7 +649,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="power_factor_output_l3",
         component="grid",
-        name="Power Factor Output L3",
+        translation_key="power_factor_output_l3",
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
@@ -657,7 +657,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="current_pcc_l3",
         component="grid",
-        name="Current PCC L3",
+        translation_key="current_pcc_l3",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -665,7 +665,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="active_power_pcc_l3",
         component="grid",
-        name="Active Power PCC L3",
+        translation_key="active_power_pcc_l3",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         suggested_display_precision=2,
@@ -673,7 +673,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="reactive_power_pcc_l3",
         component="grid",
-        name="Reactive Power PCC L3",
+        translation_key="reactive_power_pcc_l3",
         device_class=SensorDeviceClass.REACTIVE_POWER,
         native_unit_of_measurement=UnitOfReactivePower.VOLT_AMPERE_REACTIVE,
         entity_registry_enabled_default=False,
@@ -682,7 +682,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="power_factor_pcc_l3",
         component="grid",
-        name="Power Factor PCC L3",
+        translation_key="power_factor_pcc_l3",
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
@@ -690,7 +690,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="active_power_pv_ext",
         component="grid",
-        name="Active Power PV Ext",
+        translation_key="active_power_pv_ext",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -699,7 +699,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="active_power_load_sys",
         component="grid",
-        name="Active Power Load Sys",
+        translation_key="active_power_load_sys",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -708,14 +708,14 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="voltage_phase_l1n",
         component="grid",
-        name="Voltage Phase L1N",
+        translation_key="voltage_phase_l1n",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="current_output_l1n",
         component="grid",
-        name="Current Output L1N",
+        translation_key="current_output_l1n",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -723,7 +723,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="active_power_output_l1n",
         component="grid",
-        name="Active Power Output L1N",
+        translation_key="active_power_output_l1n",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         suggested_display_precision=2,
@@ -731,7 +731,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="current_pcc_l1n",
         component="grid",
-        name="Current PCC L1N",
+        translation_key="current_pcc_l1n",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -739,7 +739,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="active_power_pcc_l1n",
         component="grid",
-        name="Active Power PCC L1N",
+        translation_key="active_power_pcc_l1n",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         suggested_display_precision=2,
@@ -747,14 +747,14 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="voltage_phase_l2n",
         component="grid",
-        name="Voltage Phase L2N",
+        translation_key="voltage_phase_l2n",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="current_output_l2n",
         component="grid",
-        name="Current Output L2N",
+        translation_key="current_output_l2n",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -762,7 +762,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="active_power_output_l2n",
         component="grid",
-        name="Active Power Output L2N",
+        translation_key="active_power_output_l2n",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         suggested_display_precision=2,
@@ -770,7 +770,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="current_pcc_l2n",
         component="grid",
-        name="Current PCC L2N",
+        translation_key="current_pcc_l2n",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -778,7 +778,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="active_power_pcc_l2n",
         component="grid",
-        name="Active Power PCC L2N",
+        translation_key="active_power_pcc_l2n",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         suggested_display_precision=2,
@@ -786,28 +786,28 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="voltage_line_l1",
         component="grid",
-        name="Voltage Line L1",
+        translation_key="voltage_line_l1",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="voltage_line_l2",
         component="grid",
-        name="Voltage Line L2",
+        translation_key="voltage_line_l2",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="voltage_line_l3",
         component="grid",
-        name="Voltage Line L3",
+        translation_key="voltage_line_l3",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="active_power_offgrid_total",
         component="offgrid",
-        name="Active Power Off-Grid Total",
+        translation_key="active_power_offgrid_total",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -816,7 +816,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="reactive_power_offgrid_total",
         component="offgrid",
-        name="Reactive Power Off-Grid Total",
+        translation_key="reactive_power_offgrid_total",
         device_class=SensorDeviceClass.REACTIVE_POWER,
         native_unit_of_measurement=UnitOfReactivePower.VOLT_AMPERE_REACTIVE,
         entity_registry_enabled_default=False,
@@ -825,7 +825,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="apparent_power_offgrid_total",
         component="offgrid",
-        name="Apparent Power Off-Grid Total",
+        translation_key="apparent_power_offgrid_total",
         device_class=SensorDeviceClass.APPARENT_POWER,
         native_unit_of_measurement=UnitOfApparentPower.VOLT_AMPERE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -834,7 +834,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_frequency",
         component="offgrid",
-        name="Off-Grid Frequency",
+        translation_key="offgrid_frequency",
         device_class=SensorDeviceClass.FREQUENCY,
         native_unit_of_measurement=UnitOfFrequency.HERTZ,
         suggested_display_precision=2,
@@ -842,21 +842,21 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_voltage",
         component="offgrid_single_phase",
-        name="Off-Grid Voltage",
+        translation_key="offgrid_voltage",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="offgrid_voltage_l1",
         component="offgrid_three_phase",
-        name="Off-Grid Voltage L1",
+        translation_key="offgrid_voltage_l1",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="offgrid_current_output",
         component="offgrid_single_phase",
-        name="Off-Grid Current Output",
+        translation_key="offgrid_current_output",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -864,7 +864,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_current_output_l1",
         component="offgrid_three_phase",
-        name="Off-Grid Current Output L1",
+        translation_key="offgrid_current_output_l1",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -872,7 +872,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_active_power_output",
         component="offgrid_single_phase",
-        name="Off-Grid Active Power Output",
+        translation_key="offgrid_active_power_output",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         suggested_display_precision=2,
@@ -880,7 +880,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_active_power_output_l1",
         component="offgrid_three_phase",
-        name="Off-Grid Active Power Output L1",
+        translation_key="offgrid_active_power_output_l1",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         suggested_display_precision=2,
@@ -888,7 +888,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_reactive_power_output",
         component="offgrid_single_phase",
-        name="Off-Grid Reactive Power Output",
+        translation_key="offgrid_reactive_power_output",
         device_class=SensorDeviceClass.REACTIVE_POWER,
         native_unit_of_measurement=UnitOfReactivePower.VOLT_AMPERE_REACTIVE,
         entity_registry_enabled_default=False,
@@ -897,7 +897,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_reactive_power_output_l1",
         component="offgrid_three_phase",
-        name="Off-Grid Reactive Power Output L1",
+        translation_key="offgrid_reactive_power_output_l1",
         device_class=SensorDeviceClass.REACTIVE_POWER,
         native_unit_of_measurement=UnitOfReactivePower.VOLT_AMPERE_REACTIVE,
         entity_registry_enabled_default=False,
@@ -906,7 +906,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_apparent_power_output",
         component="offgrid_single_phase",
-        name="Off-Grid Apparent Power Output",
+        translation_key="offgrid_apparent_power_output",
         device_class=SensorDeviceClass.APPARENT_POWER,
         native_unit_of_measurement=UnitOfApparentPower.VOLT_AMPERE,
         suggested_display_precision=2,
@@ -914,7 +914,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_apparent_power_output_l1",
         component="offgrid_three_phase",
-        name="Off-Grid Apparent Power Output L1",
+        translation_key="offgrid_apparent_power_output_l1",
         device_class=SensorDeviceClass.APPARENT_POWER,
         native_unit_of_measurement=UnitOfApparentPower.VOLT_AMPERE,
         suggested_display_precision=2,
@@ -922,7 +922,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_loadpeakratio",
         component="offgrid_single_phase",
-        name="Off-Grid LoadPeakRatio",
+        translation_key="offgrid_loadpeakratio",
         device_class=SensorDeviceClass.APPARENT_POWER,
         native_unit_of_measurement=UnitOfApparentPower.VOLT_AMPERE,
         suggested_display_precision=2,
@@ -930,7 +930,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_loadpeakratio_l1",
         component="offgrid_three_phase",
-        name="Off-Grid LoadPeakRatio L1",
+        translation_key="offgrid_loadpeakratio_l1",
         device_class=SensorDeviceClass.APPARENT_POWER,
         native_unit_of_measurement=UnitOfApparentPower.VOLT_AMPERE,
         suggested_display_precision=2,
@@ -938,14 +938,14 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_voltage_l2",
         component="offgrid_three_phase",
-        name="Off-Grid Voltage L2",
+        translation_key="offgrid_voltage_l2",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="offgrid_current_output_l2",
         component="offgrid_three_phase",
-        name="Off-Grid Current Output L2",
+        translation_key="offgrid_current_output_l2",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -953,7 +953,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_active_power_output_l2",
         component="offgrid_three_phase",
-        name="Off-Grid Active Power Output L2",
+        translation_key="offgrid_active_power_output_l2",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         suggested_display_precision=2,
@@ -961,7 +961,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_reactive_power_output_l2",
         component="offgrid_three_phase",
-        name="Off-Grid Reactive Power Output L2",
+        translation_key="offgrid_reactive_power_output_l2",
         device_class=SensorDeviceClass.REACTIVE_POWER,
         native_unit_of_measurement=UnitOfReactivePower.VOLT_AMPERE_REACTIVE,
         entity_registry_enabled_default=False,
@@ -970,7 +970,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_apparent_power_output_l2",
         component="offgrid_three_phase",
-        name="Off-Grid Apparent Power Output L2",
+        translation_key="offgrid_apparent_power_output_l2",
         device_class=SensorDeviceClass.APPARENT_POWER,
         native_unit_of_measurement=UnitOfApparentPower.VOLT_AMPERE,
         suggested_display_precision=2,
@@ -978,7 +978,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_loadpeakratio_l2",
         component="offgrid_three_phase",
-        name="Off-Grid LoadPeakRatio L2",
+        translation_key="offgrid_loadpeakratio_l2",
         device_class=SensorDeviceClass.APPARENT_POWER,
         native_unit_of_measurement=UnitOfApparentPower.VOLT_AMPERE,
         suggested_display_precision=2,
@@ -986,14 +986,14 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_voltage_l3",
         component="offgrid_three_phase",
-        name="Off-Grid Voltage L3",
+        translation_key="offgrid_voltage_l3",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="offgrid_current_output_l3",
         component="offgrid_three_phase",
-        name="Off-Grid Current Output L3",
+        translation_key="offgrid_current_output_l3",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -1001,7 +1001,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_active_power_output_l3",
         component="offgrid_three_phase",
-        name="Off-Grid Active Power Output L3",
+        translation_key="offgrid_active_power_output_l3",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         suggested_display_precision=2,
@@ -1009,7 +1009,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_reactive_power_output_l3",
         component="offgrid_three_phase",
-        name="Off-Grid Reactive Power Output L3",
+        translation_key="offgrid_reactive_power_output_l3",
         device_class=SensorDeviceClass.REACTIVE_POWER,
         native_unit_of_measurement=UnitOfReactivePower.VOLT_AMPERE_REACTIVE,
         entity_registry_enabled_default=False,
@@ -1018,7 +1018,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_apparent_power_output_l3",
         component="offgrid_three_phase",
-        name="Off-Grid Apparent Power Output L3",
+        translation_key="offgrid_apparent_power_output_l3",
         device_class=SensorDeviceClass.APPARENT_POWER,
         native_unit_of_measurement=UnitOfApparentPower.VOLT_AMPERE,
         suggested_display_precision=2,
@@ -1026,7 +1026,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_loadpeakratio_l3",
         component="offgrid_three_phase",
-        name="Off-Grid LoadPeakRatio L3",
+        translation_key="offgrid_loadpeakratio_l3",
         device_class=SensorDeviceClass.APPARENT_POWER,
         native_unit_of_measurement=UnitOfApparentPower.VOLT_AMPERE,
         suggested_display_precision=2,
@@ -1034,14 +1034,14 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_voltage_output_l1n",
         component="offgrid_three_phase",
-        name="Off-Grid Voltage Output L1N",
+        translation_key="offgrid_voltage_output_l1n",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="offgrid_current_output_l1n",
         component="offgrid_three_phase",
-        name="Off-Grid Current Output L1N",
+        translation_key="offgrid_current_output_l1n",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -1049,7 +1049,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_active_power_output_l1n",
         component="offgrid_three_phase",
-        name="Off-Grid Active Power Output L1N",
+        translation_key="offgrid_active_power_output_l1n",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         suggested_display_precision=2,
@@ -1057,14 +1057,14 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_voltage_output_l2n",
         component="offgrid_three_phase",
-        name="Off-Grid Voltage Output L2N",
+        translation_key="offgrid_voltage_output_l2n",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="offgrid_current_output_l2n",
         component="offgrid_three_phase",
-        name="Off-Grid Current Output L2N",
+        translation_key="offgrid_current_output_l2n",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -1072,7 +1072,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="offgrid_active_power_output_l2n",
         component="offgrid_three_phase",
-        name="Off-Grid Active Power Output L2N",
+        translation_key="offgrid_active_power_output_l2n",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         suggested_display_precision=2,
@@ -1080,14 +1080,14 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="pv_voltage_1",
         component="pv_1_2",
-        name="PV Voltage 1",
+        translation_key="pv_voltage_1",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="pv_current_1",
         component="pv_1_2",
-        name="PV Current 1",
+        translation_key="pv_current_1",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -1095,7 +1095,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="pv_power_1",
         component="pv_1_2",
-        name="PV Power 1",
+        translation_key="pv_power_1",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1104,14 +1104,14 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="pv_voltage_2",
         component="pv_1_2",
-        name="PV Voltage 2",
+        translation_key="pv_voltage_2",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="pv_current_2",
         component="pv_1_2",
-        name="PV Current 2",
+        translation_key="pv_current_2",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -1119,7 +1119,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="pv_power_2",
         component="pv_1_2",
-        name="PV Power 2",
+        translation_key="pv_power_2",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1128,14 +1128,14 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="pv_voltage_3",
         component="pv_3",
-        name="PV Voltage 3",
+        translation_key="pv_voltage_3",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="pv_current_3",
         component="pv_3",
-        name="PV Current 3",
+        translation_key="pv_current_3",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -1143,7 +1143,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="pv_power_3",
         component="pv_3",
-        name="PV Power 3",
+        translation_key="pv_power_3",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1152,14 +1152,14 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="pv_voltage_4",
         component="pv_4",
-        name="PV Voltage 4",
+        translation_key="pv_voltage_4",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="pv_current_4",
         component="pv_4",
-        name="PV Current 4",
+        translation_key="pv_current_4",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -1167,7 +1167,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="pv_power_4",
         component="pv_4",
-        name="PV Power 4",
+        translation_key="pv_power_4",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1176,14 +1176,14 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="pv_voltage_5",
         component="pv_5_6",
-        name="PV Voltage 5",
+        translation_key="pv_voltage_5",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="pv_current_5",
         component="pv_5_6",
-        name="PV Current 5",
+        translation_key="pv_current_5",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -1191,7 +1191,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="pv_power_5",
         component="pv_5_6",
-        name="PV Power 5",
+        translation_key="pv_power_5",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1200,14 +1200,14 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="pv_voltage_6",
         component="pv_5_6",
-        name="PV Voltage 6",
+        translation_key="pv_voltage_6",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="pv_current_6",
         component="pv_5_6",
-        name="PV Current 6",
+        translation_key="pv_current_6",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -1215,7 +1215,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="pv_power_6",
         component="pv_5_6",
-        name="PV Power 6",
+        translation_key="pv_power_6",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1224,14 +1224,14 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="pv_voltage_7",
         component="pv_7_8",
-        name="PV Voltage 7",
+        translation_key="pv_voltage_7",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="pv_current_7",
         component="pv_7_8",
-        name="PV Current 7",
+        translation_key="pv_current_7",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -1239,7 +1239,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="pv_power_7",
         component="pv_7_8",
-        name="PV Power 7",
+        translation_key="pv_power_7",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1248,14 +1248,14 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="pv_voltage_8",
         component="pv_7_8",
-        name="PV Voltage 8",
+        translation_key="pv_voltage_8",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="pv_current_8",
         component="pv_7_8",
-        name="PV Current 8",
+        translation_key="pv_current_8",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -1263,7 +1263,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="pv_power_8",
         component="pv_7_8",
-        name="PV Power 8",
+        translation_key="pv_power_8",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1272,14 +1272,14 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="pv_voltage_9",
         component="pv_9_10",
-        name="PV Voltage 9",
+        translation_key="pv_voltage_9",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="pv_current_9",
         component="pv_9_10",
-        name="PV Current 9",
+        translation_key="pv_current_9",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -1287,7 +1287,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="pv_power_9",
         component="pv_9_10",
-        name="PV Power 9",
+        translation_key="pv_power_9",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1296,14 +1296,14 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="pv_voltage_10",
         component="pv_9_10",
-        name="PV Voltage 10",
+        translation_key="pv_voltage_10",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="pv_current_10",
         component="pv_9_10",
-        name="PV Current 10",
+        translation_key="pv_current_10",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -1311,7 +1311,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="pv_power_10",
         component="pv_9_10",
-        name="PV Power 10",
+        translation_key="pv_power_10",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1320,7 +1320,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="pv_power_total",
         component="pv_1_2",
-        name="PV Power Total",
+        translation_key="pv_power_total",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1328,14 +1328,14 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_voltage_1",
         component="battery_1_2",
-        name="Battery Voltage 1",
+        translation_key="battery_voltage_1",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
     SofarSensorDescription(
         key="battery_current_1",
         component="battery_1_2",
-        name="Battery Current 1",
+        translation_key="battery_current_1",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         suggested_display_precision=2,
@@ -1343,7 +1343,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_power_1",
         component="battery_1_2",
-        name="Battery Power 1",
+        translation_key="battery_power_1",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1352,7 +1352,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_temperature_1",
         component="battery_1_2",
-        name="Battery Temperature 1",
+        translation_key="battery_temperature_1",
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1361,14 +1361,14 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_capacity_1",
         component="battery_1_2",
-        name="Battery Capacity 1",
+        translation_key="battery_capacity_1",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SofarSensorDescription(
         key="battery_state_of_health_1",
         component="battery_1_2",
-        name="Battery State of Health 1",
+        translation_key="battery_state_of_health_1",
         native_unit_of_measurement=PERCENTAGE,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-heart",
@@ -1376,14 +1376,14 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_charge_cycle_1",
         component="battery_1_2",
-        name="Battery Charge Cycle 1",
+        translation_key="battery_charge_cycle_1",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SofarSensorDescription(
         key="battery_voltage_2",
         component="battery_1_2",
-        name="Battery Voltage 2",
+        translation_key="battery_voltage_2",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         entity_registry_enabled_default=False,
@@ -1391,7 +1391,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_current_2",
         component="battery_1_2",
-        name="Battery Current 2",
+        translation_key="battery_current_2",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         entity_registry_enabled_default=False,
@@ -1400,7 +1400,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_power_2",
         component="battery_1_2",
-        name="Battery Power 2",
+        translation_key="battery_power_2",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1410,7 +1410,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_temperature_2",
         component="battery_1_2",
-        name="Battery Temperature 2",
+        translation_key="battery_temperature_2",
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1420,7 +1420,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_capacity_2",
         component="battery_1_2",
-        name="Battery Capacity 2",
+        translation_key="battery_capacity_2",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
@@ -1428,7 +1428,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_state_of_health_2",
         component="battery_1_2",
-        name="Battery State of Health 2",
+        translation_key="battery_state_of_health_2",
         native_unit_of_measurement=PERCENTAGE,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-heart",
@@ -1437,7 +1437,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_charge_cycle_2",
         component="battery_1_2",
-        name="Battery Charge Cycle 2",
+        translation_key="battery_charge_cycle_2",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
@@ -1445,7 +1445,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_voltage_3",
         component="battery_3_8",
-        name="Battery Voltage 3",
+        translation_key="battery_voltage_3",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         entity_registry_enabled_default=False,
@@ -1453,7 +1453,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_current_3",
         component="battery_3_8",
-        name="Battery Current 3",
+        translation_key="battery_current_3",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         entity_registry_enabled_default=False,
@@ -1462,7 +1462,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_power_3",
         component="battery_3_8",
-        name="Battery Power 3",
+        translation_key="battery_power_3",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1472,7 +1472,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_temperature_3",
         component="battery_3_8",
-        name="Battery Temperature 3",
+        translation_key="battery_temperature_3",
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1482,7 +1482,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_capacity_3",
         component="battery_3_8",
-        name="Battery Capacity 3",
+        translation_key="battery_capacity_3",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
@@ -1490,7 +1490,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_state_of_health_3",
         component="battery_3_8",
-        name="Battery State of Health 3",
+        translation_key="battery_state_of_health_3",
         native_unit_of_measurement=PERCENTAGE,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-heart",
@@ -1499,7 +1499,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_charge_cycle_3",
         component="battery_3_8",
-        name="Battery Charge Cycle 3",
+        translation_key="battery_charge_cycle_3",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
@@ -1507,7 +1507,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_voltage_4",
         component="battery_3_8",
-        name="Battery Voltage 4",
+        translation_key="battery_voltage_4",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         entity_registry_enabled_default=False,
@@ -1515,7 +1515,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_current_4",
         component="battery_3_8",
-        name="Battery Current 4",
+        translation_key="battery_current_4",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         entity_registry_enabled_default=False,
@@ -1524,7 +1524,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_power_4",
         component="battery_3_8",
-        name="Battery Power 4",
+        translation_key="battery_power_4",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1534,7 +1534,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_temperature_4",
         component="battery_3_8",
-        name="Battery Temperature 4",
+        translation_key="battery_temperature_4",
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1544,7 +1544,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_capacity_4",
         component="battery_3_8",
-        name="Battery Capacity 4",
+        translation_key="battery_capacity_4",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
@@ -1552,7 +1552,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_state_of_health_4",
         component="battery_3_8",
-        name="Battery State of Health 4",
+        translation_key="battery_state_of_health_4",
         native_unit_of_measurement=PERCENTAGE,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-heart",
@@ -1561,7 +1561,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_charge_cycle_4",
         component="battery_3_8",
-        name="Battery Charge Cycle 4",
+        translation_key="battery_charge_cycle_4",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
@@ -1569,7 +1569,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_voltage_5",
         component="battery_3_8",
-        name="Battery Voltage 5",
+        translation_key="battery_voltage_5",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         entity_registry_enabled_default=False,
@@ -1577,7 +1577,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_current_5",
         component="battery_3_8",
-        name="Battery Current 5",
+        translation_key="battery_current_5",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         entity_registry_enabled_default=False,
@@ -1586,7 +1586,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_power_5",
         component="battery_3_8",
-        name="Battery Power 5",
+        translation_key="battery_power_5",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1596,7 +1596,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_temperature_5",
         component="battery_3_8",
-        name="Battery Temperature 5",
+        translation_key="battery_temperature_5",
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1606,7 +1606,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_capacity_5",
         component="battery_3_8",
-        name="Battery Capacity 5",
+        translation_key="battery_capacity_5",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
@@ -1614,7 +1614,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_state_of_health_5",
         component="battery_3_8",
-        name="Battery State of Health 5",
+        translation_key="battery_state_of_health_5",
         native_unit_of_measurement=PERCENTAGE,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-heart",
@@ -1623,7 +1623,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_charge_cycle_5",
         component="battery_3_8",
-        name="Battery Charge Cycle 5",
+        translation_key="battery_charge_cycle_5",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
@@ -1631,7 +1631,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_voltage_6",
         component="battery_3_8",
-        name="Battery Voltage 6",
+        translation_key="battery_voltage_6",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         entity_registry_enabled_default=False,
@@ -1639,7 +1639,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_current_6",
         component="battery_3_8",
-        name="Battery Current 6",
+        translation_key="battery_current_6",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         entity_registry_enabled_default=False,
@@ -1648,7 +1648,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_power_6",
         component="battery_3_8",
-        name="Battery Power 6",
+        translation_key="battery_power_6",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1658,7 +1658,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_temperature_6",
         component="battery_3_8",
-        name="Battery Temperature 6",
+        translation_key="battery_temperature_6",
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1668,7 +1668,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_capacity_6",
         component="battery_3_8",
-        name="Battery Capacity 6",
+        translation_key="battery_capacity_6",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
@@ -1676,7 +1676,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_state_of_health_6",
         component="battery_3_8",
-        name="Battery State of Health 6",
+        translation_key="battery_state_of_health_6",
         native_unit_of_measurement=PERCENTAGE,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-heart",
@@ -1685,7 +1685,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_charge_cycle_6",
         component="battery_3_8",
-        name="Battery Charge Cycle 6",
+        translation_key="battery_charge_cycle_6",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
@@ -1693,7 +1693,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_voltage_7",
         component="battery_3_8",
-        name="Battery Voltage 7",
+        translation_key="battery_voltage_7",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         entity_registry_enabled_default=False,
@@ -1701,7 +1701,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_current_7",
         component="battery_3_8",
-        name="Battery Current 7",
+        translation_key="battery_current_7",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         entity_registry_enabled_default=False,
@@ -1710,7 +1710,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_power_7",
         component="battery_3_8",
-        name="Battery Power 7",
+        translation_key="battery_power_7",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1720,7 +1720,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_temperature_7",
         component="battery_3_8",
-        name="Battery Temperature 7",
+        translation_key="battery_temperature_7",
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1730,7 +1730,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_capacity_7",
         component="battery_3_8",
-        name="Battery Capacity 7",
+        translation_key="battery_capacity_7",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
@@ -1738,7 +1738,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_state_of_health_7",
         component="battery_3_8",
-        name="Battery State of Health 7",
+        translation_key="battery_state_of_health_7",
         native_unit_of_measurement=PERCENTAGE,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-heart",
@@ -1747,7 +1747,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_charge_cycle_7",
         component="battery_3_8",
-        name="Battery Charge Cycle 7",
+        translation_key="battery_charge_cycle_7",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
@@ -1755,7 +1755,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_voltage_8",
         component="battery_3_8",
-        name="Battery Voltage 8",
+        translation_key="battery_voltage_8",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         entity_registry_enabled_default=False,
@@ -1763,7 +1763,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_current_8",
         component="battery_3_8",
-        name="Battery Current 8",
+        translation_key="battery_current_8",
         device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         entity_registry_enabled_default=False,
@@ -1772,7 +1772,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_power_8",
         component="battery_3_8",
-        name="Battery Power 8",
+        translation_key="battery_power_8",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1782,7 +1782,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_temperature_8",
         component="battery_3_8",
-        name="Battery Temperature 8",
+        translation_key="battery_temperature_8",
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1792,7 +1792,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_capacity_8",
         component="battery_3_8",
-        name="Battery Capacity 8",
+        translation_key="battery_capacity_8",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
@@ -1800,7 +1800,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_state_of_health_8",
         component="battery_3_8",
-        name="Battery State of Health 8",
+        translation_key="battery_state_of_health_8",
         native_unit_of_measurement=PERCENTAGE,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-heart",
@@ -1809,7 +1809,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_charge_cycle_8",
         component="battery_3_8",
-        name="Battery Charge Cycle 8",
+        translation_key="battery_charge_cycle_8",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
@@ -1817,7 +1817,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_power_total",
         component="battery_totals",
-        name="Battery Power Total",
+        translation_key="battery_power_total",
         device_class=SensorDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1825,7 +1825,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_capacity_total",
         component="battery_totals",
-        name="Battery Capacity Total",
+        translation_key="battery_capacity_total",
         device_class=SensorDeviceClass.BATTERY,
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1833,7 +1833,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_state_of_health_total",
         component="battery_totals",
-        name="Battery State of Health Total",
+        translation_key="battery_state_of_health_total",
         native_unit_of_measurement=PERCENTAGE,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-heart",
@@ -1841,7 +1841,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="solar_generation_today",
         component="energy",
-        name="Solar Generation Today",
+        translation_key="solar_generation_today",
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
@@ -1850,7 +1850,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="solar_generation_total",
         component="energy",
-        name="Solar Generation Total",
+        translation_key="solar_generation_total",
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
@@ -1858,7 +1858,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="load_consumption_today",
         component="energy",
-        name="Load Consumption Today",
+        translation_key="load_consumption_today",
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
@@ -1867,7 +1867,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="load_consumption_total",
         component="energy",
-        name="Load Consumption Total",
+        translation_key="load_consumption_total",
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
@@ -1875,7 +1875,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="import_energy_today",
         component="energy",
-        name="Import Energy Today",
+        translation_key="import_energy_today",
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
@@ -1885,7 +1885,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="import_energy_total",
         component="energy",
-        name="Import Energy Total",
+        translation_key="import_energy_total",
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
@@ -1894,7 +1894,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="export_energy_today",
         component="energy",
-        name="Export Energy Today",
+        translation_key="export_energy_today",
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
@@ -1904,7 +1904,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="export_energy_total",
         component="energy",
-        name="Export Energy Total",
+        translation_key="export_energy_total",
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
@@ -1913,7 +1913,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_input_energy_today",
         component="battery_energy",
-        name="Battery Input Energy Today",
+        translation_key="battery_input_energy_today",
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
@@ -1923,7 +1923,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_input_energy_total",
         component="battery_energy",
-        name="Battery Input Energy Total",
+        translation_key="battery_input_energy_total",
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
@@ -1932,7 +1932,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_output_energy_today",
         component="battery_energy",
-        name="Battery Output Energy Today",
+        translation_key="battery_output_energy_today",
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
@@ -1942,7 +1942,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="battery_output_energy_total",
         component="battery_energy",
-        name="Battery Output Energy Total",
+        translation_key="battery_output_energy_total",
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
@@ -1951,32 +1951,32 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="passive_eps_wait_time",
         component="eps",
-        name="EPS Wait Time",
+        translation_key="passive_eps_wait_time",
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
     SofarSensorDescription(
         key="battery_active_control",
         component="battery_active_control",
-        name="Battery Active Control",
+        translation_key="battery_active_control",
         entity_registry_enabled_default=False,
     ),
     SofarSensorDescription(
         key="parallel_control",
         component="parallel",
-        name="Parallel Control",
+        translation_key="parallel_control",
     ),
     SofarSensorDescription(
         key="parallel_masterslave",
         component="parallel",
-        name="Parallel Master-Salve",
+        translation_key="parallel_masterslave",
         device_class=SensorDeviceClass.ENUM,
         options=["Slave", "Master"],
     ),
     SofarSensorDescription(
         key="bat_config_id",
         component="battery_config_id",
-        name="BatConfig: ID",
+        translation_key="bat_config_id",
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
         entity_registry_enabled_default=False,
@@ -1984,7 +1984,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="bat_config_address_1",
         component="battery_config_id",
-        name="BatConfig: Address 1",
+        translation_key="bat_config_address_1",
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
         entity_registry_enabled_default=False,
@@ -1992,7 +1992,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="bat_config_protocol",
         component="battery_config_id",
-        name="BatConfig: Protocol",
+        translation_key="bat_config_protocol",
         device_class=SensorDeviceClass.ENUM,
         options=[
             "First Flight Built In Bms Default",
@@ -2016,7 +2016,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="bat_config_overvoltage_protection",
         component="battery_config_id",
-        name="BatConfig: Overvoltage Protection",
+        translation_key="bat_config_overvoltage_protection",
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
@@ -2025,7 +2025,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="bat_config_charging_voltage",
         component="battery_config",
-        name="BatConfig: Charging Voltage",
+        translation_key="bat_config_charging_voltage",
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
@@ -2033,7 +2033,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="bat_config_undervoltage_protection",
         component="battery_config",
-        name="BatConfig: Undervoltage Protection",
+        translation_key="bat_config_undervoltage_protection",
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
@@ -2042,7 +2042,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="bat_config_minimum_discharge_voltage",
         component="battery_config",
-        name="BatConfig: Minimum Discharge Voltage",
+        translation_key="bat_config_minimum_discharge_voltage",
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
@@ -2051,7 +2051,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="bat_config_maximum_charge_current_limit",
         component="battery_config",
-        name="BatConfig: Maximum Charge Current Limit",
+        translation_key="bat_config_maximum_charge_current_limit",
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
@@ -2061,7 +2061,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="bat_config_maximum_discharge_current_limit",
         component="battery_config",
-        name="BatConfig: Maximum Discharge Current Limit",
+        translation_key="bat_config_maximum_discharge_current_limit",
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
@@ -2071,7 +2071,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="bat_config_depth_of_discharge",
         component="battery_config",
-        name="BatConfig: Depth of Discharge",
+        translation_key="bat_config_depth_of_discharge",
         native_unit_of_measurement=PERCENTAGE,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
@@ -2080,7 +2080,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="bat_config_end_of_discharge",
         component="battery_config",
-        name="BatConfig: End of Discharge",
+        translation_key="bat_config_end_of_discharge",
         native_unit_of_measurement=PERCENTAGE,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
@@ -2089,7 +2089,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="bat_config_capacity",
         component="battery_config",
-        name="BatConfig: Capacity",
+        translation_key="bat_config_capacity",
         native_unit_of_measurement="Ah",
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
@@ -2098,7 +2098,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="bat_config_rated_battery_voltage",
         component="battery_config",
-        name="BatConfig: Rated Battery Voltage",
+        translation_key="bat_config_rated_battery_voltage",
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
@@ -2107,7 +2107,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="bat_config_cell_type",
         component="battery_config",
-        name="BatConfig: Cell Type",
+        translation_key="bat_config_cell_type",
         device_class=SensorDeviceClass.ENUM,
         options=["Lead Acid", "Lithium Iron Phosphate", "Ternary", "Lithium Titanate", "Agm", "Gel", "Flooded"],
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -2117,7 +2117,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="bat_config_eps_buffer",
         component="battery_config",
-        name="BatConfig: EPS Buffer",
+        translation_key="bat_config_eps_buffer",
         native_unit_of_measurement=PERCENTAGE,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
@@ -2126,7 +2126,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="bat_config_address_2",
         component="battery_config",
-        name="BatConfig: Address 2",
+        translation_key="bat_config_address_2",
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
         entity_registry_enabled_default=False,
@@ -2134,7 +2134,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="bat_config_address_3",
         component="battery_config",
-        name="BatConfig: Address 3",
+        translation_key="bat_config_address_3",
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
         entity_registry_enabled_default=False,
@@ -2142,7 +2142,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="bat_config_address_4",
         component="battery_config",
-        name="BatConfig: Address 4",
+        translation_key="bat_config_address_4",
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
         entity_registry_enabled_default=False,
@@ -2150,7 +2150,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="bat_config_tempco",
         component="battery_config",
-        name="BatConfig: Lead Acid Battery Temperature Compensation Factor",
+        translation_key="bat_config_tempco",
         native_unit_of_measurement="mV/Cell",
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
@@ -2159,7 +2159,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="bat_config_voltage_float",
         component="battery_config",
-        name="BatConfig: Lead Acid Battery Float Voltage",
+        translation_key="bat_config_voltage_float",
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
@@ -2168,7 +2168,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
     SofarSensorDescription(
         key="sync_rtc_result",
         component="rtc_sync",
-        name="Update System Time Operation Result",
+        translation_key="sync_rtc_result",
         device_class=SensorDeviceClass.ENUM,
         options=[
             "Successful",

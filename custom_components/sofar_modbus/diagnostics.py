@@ -7,10 +7,25 @@ from __future__ import annotations
 
 from typing import Any
 
+from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.core import HomeAssistant
 from modbus_connection import ModbusError
 
 from .coordinator import SofarConfigEntry
+
+# The serial number identifies a specific physical inverter; diagnostics
+# files get attached to public GitHub issues, so it's redacted the same way
+# the coordinator already keeps it out of logs (see 1feaabe).
+TO_REDACT = {"serial_number"}
+
+# sofar-modbus's identify() (both modern and legacy device modules) matches a
+# serial against a table of known prefixes to resolve the inverter type/model
+# — the longest currently being "SP1ES120N6" (10 chars). Keeping that many
+# leading characters in `serial_prefix` below is enough to tell which family
+# an *unrecognized* serial is closest to (useful for extending that table
+# upstream) without keeping the rest of what is otherwise a unique per-device
+# identifier.
+_SERIAL_PREFIX_LEN = 10
 
 
 async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: SofarConfigEntry) -> dict[str, Any]:
@@ -27,11 +42,14 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: SofarCo
     except ModbusError as err:
         read_errors["device"] = str(err)
 
-    return {
+    serial = device.serial_number
+    data: dict[str, Any] = {
         "model": device.model,
-        "serial_number": device.serial_number,
+        "serial_number": serial,
+        "serial_prefix": serial[:_SERIAL_PREFIX_LEN] if serial else None,
         "inverter_type": repr(device.inverter_type),
         "served_components": sorted(served),
         "read_errors": read_errors,
         "registers": registers,
     }
+    return async_redact_data(data, TO_REDACT)

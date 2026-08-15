@@ -1,8 +1,7 @@
 """Smoke test: setup -> SofarInverter -> entity filtering -> read every served
 field, against the mock backend, for both a PV-only and a HYBRID identity.
 
-Not a full pytest suite yet (that's tracked separately) — this is the
-end-to-end check sensor.py's SENSOR_DESCRIPTIONS component mapping is
+The end-to-end check sensor.py's SENSOR_DESCRIPTIONS component mapping is
 validated against during development. Safe to run standalone:
 `python tests/lib/test_smoke.py`.
 """
@@ -30,7 +29,7 @@ from sofar_modbus.modern.device import SofarInverter  # noqa: E402
 from custom_components.sofar_modbus.sensor import SENSOR_DESCRIPTIONS, SofarSensor, SofarTotalSensor  # noqa: E402
 
 
-def _check_all_descriptions_resolve() -> None:
+def test_all_descriptions_resolve() -> None:
     """Every (component, key) row must resolve to a real attribute on
     SofarInverter, regardless of which identity would poll it — catches a
     wrong entry in generate_sofar_model.py's component mapping that the
@@ -98,7 +97,7 @@ async def _run(serial: str, label: str) -> int:
     return built
 
 
-async def _check_enum_sensor_renders_as_text() -> None:
+async def test_enum_sensor_renders_as_text() -> None:
     """system_state is IntEnum-backed (SystemState); native_value must show a
     label like "Grid Connected", not a bare int — Python 3.11 changed
     IntEnum.__str__ to print just the number, which is what the frontend
@@ -120,7 +119,7 @@ async def _check_enum_sensor_renders_as_text() -> None:
     print("enum-sensor-renders-as-text: PASSED")
 
 
-async def _check_total_increasing_dip_guard() -> None:
+async def test_total_increasing_dip_guard() -> None:
     """load_consumption_total is total_increasing; a small device-side torn-read
     dip must be held at the last good value, but a genuine large drop (a daily
     counter's midnight reset) must pass straight through. Regression guard for
@@ -158,7 +157,7 @@ async def _check_total_increasing_dip_guard() -> None:
     print("total-increasing-dip-guard: PASSED")
 
 
-async def _check_total_increasing_holds_available_through_failed_poll() -> None:
+async def test_total_increasing_holds_available_through_failed_poll() -> None:
     """A total_increasing counter must stay available (and keep its last
     value) when its own component fails to refresh this poll — same
     principle as the dip guard, applied to the failure axis: overnight
@@ -218,7 +217,7 @@ async def _check_total_increasing_holds_available_through_failed_poll() -> None:
     print("total-increasing-holds-available-through-failed-poll: PASSED")
 
 
-async def _check_total_sensor_restores_state_and_seeds_high_water() -> None:
+async def test_total_sensor_restores_state_and_seeds_high_water() -> None:
     unit = MockModbusConnection().for_unit(1)
     _seed_serial(unit, "SS2ES104N5S445")
     device = SofarInverter(unit)
@@ -257,21 +256,26 @@ async def _check_total_sensor_restores_state_and_seeds_high_water() -> None:
     print("total-sensor-restores-state-and-seeds-high-water: PASSED")
 
 
-async def main() -> None:
-    _check_all_descriptions_resolve()
-    await _check_enum_sensor_renders_as_text()
-    await _check_total_increasing_dip_guard()
-    await _check_total_increasing_holds_available_through_failed_poll()
-    await _check_total_sensor_restores_state_and_seeds_high_water()
-
+async def test_hybrid_serves_meaningfully_more_entities_than_pv() -> None:
+    """Regression guard: a PV inverter must end up with meaningfully fewer
+    entities than a HYBRID one (battery, EPS, passive mode etc. are
+    HYBRID-only), not "nearly everything" for both.
+    """
     pv_built = await _run("SS2ES104N5S445", "PV (live hardware serial)")
     hybrid_built = await _run("SP1XXES100XX", "HYBRID (SP1 prefix)")
-    # Regression guard: a PV inverter must end up with meaningfully fewer
-    # entities than a HYBRID one (battery, EPS, passive mode etc. are
-    # HYBRID-only), not "nearly everything" for both.
     assert pv_built < hybrid_built * 0.8, (
         f"PV ({pv_built}) should be well below HYBRID ({hybrid_built}) — component filtering may not be applying"
     )
+    print("hybrid-serves-meaningfully-more-entities-than-pv: PASSED")
+
+
+async def main() -> None:
+    test_all_descriptions_resolve()
+    await test_enum_sensor_renders_as_text()
+    await test_total_increasing_dip_guard()
+    await test_total_increasing_holds_available_through_failed_poll()
+    await test_total_sensor_restores_state_and_seeds_high_water()
+    await test_hybrid_serves_meaningfully_more_entities_than_pv()
     print("SMOKE TEST PASSED")
 
 

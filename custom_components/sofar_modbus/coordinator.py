@@ -46,7 +46,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 from modbus_connection import ModbusConnection, ModbusConnectionError, ModbusError, ModbusTimeoutError
 
-from sofar_modbus.model import SofarComponentBase, UpdateReport
+from sofar_modbus.model import SofarComponentBase, UpdateReport  # the PyPI library, not a self-import — see __init__.py
 from sofar_modbus.modern.device import SofarInverter
 
 _LOGGER = logging.getLogger(__name__)

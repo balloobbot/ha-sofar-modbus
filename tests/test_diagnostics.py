@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
+from homeassistant.components.diagnostics import REDACTED
 from homeassistant.core import HomeAssistant
 from modbus_connection import ModbusTimeoutError
 from modbus_connection.mock import MockModbusConnection, MockModbusUnit
@@ -50,7 +51,8 @@ async def test_get_diagnostics(hass: HomeAssistant) -> None:
         await hass.async_block_till_done(wait_background_tasks=True)
 
     diag = await async_get_config_entry_diagnostics(hass, entry)
-    assert diag["serial_number"] == "SS2ES104N5S445"
+    assert diag["serial_number"] == REDACTED
+    assert diag["serial_prefix"] == "SS2ES104N5"
     assert diag["model"] == "4.4 KTLX-G3"
     assert "PV" in diag["inverter_type"]
     assert "grid" in diag["served_components"]
