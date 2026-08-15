@@ -59,6 +59,11 @@ async def test_get_diagnostics(hass: HomeAssistant) -> None:
     assert diag["read_errors"] == {}
     assert "holding" in diag["registers"]
     assert 0x0484 in diag["registers"]["holding"]
+    # The raw register dump must not leak the serial number either -- those
+    # 7 words (the identity block's ASCII encoding of it) are the same value
+    # serial_number above gets redacted to.
+    for addr in range(0x445, 0x445 + 7):
+        assert addr not in diag["registers"]["holding"], f"register {addr:#x} should be stripped (encodes the serial number)"
 
 
 async def test_get_diagnostics_with_read_error(hass: HomeAssistant) -> None:
