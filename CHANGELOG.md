@@ -10,6 +10,25 @@ and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged
 
 ## [Unreleased]
 
+### Changed
+
+- **Communication Health Split Into Separate Entities**: `communication_health`'s
+  `success_rate`, `last_error`, and `last_error_time` used to live as
+  `extra_state_attributes` on that one sensor. Home Assistant Core discourages
+  state-like data in entity attributes (not queryable in history/statistics, not usable
+  in automations/dashboards as a first-class entity), so each is now its own diagnostic
+  sensor entity: `communication_health_success_rate` (percentage, enabled by default),
+  `communication_health_last_error` and `communication_health_last_error_time` (disabled
+  by default — `None` most of the time, mirroring `rtc`/`hardware_version`'s convention
+  for low-traffic diagnostics). `last_error_time`'s underlying value also changed from an
+  ISO string to a real timestamp (`SensorDeviceClass.TIMESTAMP`).
+  **⚠️ Breaking for automations/dashboards**: anything reading
+  `communication_health`'s `success_rate`/`last_error`/`last_error_time` attributes needs
+  to point at the three new entities instead; the attributes no longer exist.
+  `communication_health` itself (state `good`/`degraded`/`poor`/`unknown`) is unchanged.
+  Unrelated to the `diagnostics.py` config-entry diagnostics *download* feature touched
+  in `7a3f47a`/0.4.1 — different "diagnostics", not touched here.
+
 ### Fixed
 
 - **Off-Grid Output Readings Stuck on the Slow Poll Tier**: `offgrid_single_phase` and

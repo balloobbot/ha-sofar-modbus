@@ -16,9 +16,8 @@ actually failed this poll go unavailable — not all of them.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from enum import IntEnum
-from typing import Any
 
 from homeassistant.components.sensor import (
     RestoreSensor,
@@ -86,6 +85,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_
         if description.component in served  # not served by this inverter type otherwise
     ]
     entities.append(SofarCommunicationHealthSensor(coordinator))
+    entities.append(SofarCommunicationHealthSuccessRateSensor(coordinator))
+    entities.append(SofarCommunicationHealthLastErrorSensor(coordinator))
+    entities.append(SofarCommunicationHealthLastErrorTimeSensor(coordinator))
     async_add_entities(entities)
 
 
@@ -120,13 +122,64 @@ class SofarCommunicationHealthSensor(CoordinatorEntity[SofarDataUpdateCoordinato
             return "degraded"
         return "poor"
 
+
+class SofarCommunicationHealthSuccessRateSensor(CoordinatorEntity[SofarDataUpdateCoordinator], SensorEntity):
+    """Same rolling window as `SofarCommunicationHealthSensor`, as a number instead of a bucket."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "communication_health_success_rate"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        serial = coordinator.device.serial_number
+        self._attr_unique_id = f"{serial}_communication_health_success_rate"
+        self._attr_device_info = build_device_info(coordinator)
+
     @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        return {
-            "success_rate": self.coordinator.success_rate,
-            "last_error": self.coordinator.last_error,
-            "last_error_time": self.coordinator.last_error_time,
-        }
+    def native_value(self) -> float | None:
+        return self.coordinator.success_rate
+
+
+class SofarCommunicationHealthLastErrorSensor(CoordinatorEntity[SofarDataUpdateCoordinator], SensorEntity):
+    """Type + message of the most recent poll error, if any. Not cleared by a later success."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "communication_health_last_error"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
+
+    def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        serial = coordinator.device.serial_number
+        self._attr_unique_id = f"{serial}_communication_health_last_error"
+        self._attr_device_info = build_device_info(coordinator)
+
+    @property
+    def native_value(self) -> str | None:
+        return self.coordinator.last_error
+
+
+class SofarCommunicationHealthLastErrorTimeSensor(CoordinatorEntity[SofarDataUpdateCoordinator], SensorEntity):
+    """When the most recent poll error (see `SofarCommunicationHealthLastErrorSensor`) happened."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "communication_health_last_error_time"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_entity_registry_enabled_default = False
+
+    def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        serial = coordinator.device.serial_number
+        self._attr_unique_id = f"{serial}_communication_health_last_error_time"
+        self._attr_device_info = build_device_info(coordinator)
+
+    @property
+    def native_value(self) -> datetime | None:
+        return self.coordinator.last_error_time
 
 
 class SofarSensor(SofarEntity, SensorEntity):

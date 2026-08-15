@@ -828,6 +828,15 @@
                     "poor": "Poor",
                     "unknown": "Unknown"
                 }
+            },
+            "communication_health_success_rate": {
+                "name": "Success Rate"
+            },
+            "communication_health_last_error": {
+                "name": "Last Error"
+            },
+            "communication_health_last_error_time": {
+                "name": "Last Error Time"
             }
         }
     }

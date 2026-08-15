@@ -36,7 +36,7 @@ from __future__ import annotations
 
 import logging
 from collections import deque
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 from homeassistant.components.sensor import SensorStateClass
@@ -108,7 +108,7 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
         self._consecutive_failures: dict[str, int] = {}
         self._poll_outcomes: deque[bool] = deque(maxlen=_HEALTH_WINDOW)
         self.last_error: str | None = None
-        self.last_error_time: str | None = None
+        self.last_error_time: datetime | None = None
         self._cycle = 0
         self._fast: dict[str, SofarComponentBase] | None = None
         self._slow: dict[str, SofarComponentBase] | None = None
@@ -135,7 +135,7 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
         self._poll_outcomes.append(success)
         if error is not None:
             self.last_error = f"{type(error).__name__}: {error}"
-            self.last_error_time = dt_util.utcnow().isoformat()
+            self.last_error_time = dt_util.utcnow()
 
     @property
     def served_components(self) -> frozenset[str]:
