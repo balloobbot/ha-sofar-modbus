@@ -10,6 +10,24 @@ and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-08-15
+
+### Fixed
+
+- **Diagnostics Redaction Gap**: 0.4.0's `serial_number` redaction only covered the named
+  field — the same serial number was still sitting unredacted in the diagnostics
+  `"registers"` dump, ASCII-encoded across 7 words of the identity block. Since that
+  register map is public, anyone attaching a diagnostics file to a GitHub issue was still
+  leaking their full serial number. Those registers are now stripped from the dump too.
+  Found by inspecting a real diagnostics download from a live install — thanks for
+  catching it.
+
+### Verification
+
+- New assertions in `tests/test_diagnostics.py` and `tests/lib/test_diagnostics_lib.py`
+  confirm the 7 registers are absent from the dump. Full suite (`pytest` — 70 passed,
+  standalone `tests/lib/*.py` scripts, `ruff` format/lint, `mypy`) green on `16d707b`.
+
 ## [0.4.0] - 2026-08-15
 
 ### Changed
