@@ -9,6 +9,35 @@ and GitHub Release.
 
 ## [Unreleased]
 
+## [0.3.14] - 2026-08-14
+
+### Fixed
+
+- **Instant Non-Blocking Startup**: Because inverter type and registers are pre-identified from the config entry unique ID, `async_setup_entry` no longer blocks Home Assistant startup waiting for offline Modbus timeouts (#37).
+- **Energy Totals Restored Across Nighttime Restarts**: All entity platforms are registered immediately on boot even if the inverter is sleeping in the dark, allowing `RestoreSensor` (`SofarTotalSensor`) to instantly restore previous long-term energy totals (`total_generation`, `today_generation`) from Home Assistant's database (#37).
+- **Eliminate Startup Banner**: Eliminates the 10-second startup latency and "Wrapping up startup" frontend banner on boot (#37).
+
+### Verification
+
+- CI (`ruff`, `mypy`, `pytest`) green on `025476d`.
+
+## [0.3.13] - 2026-08-14
+
+### Added
+
+- **Reconfigure Flow**: Support modifying network connection settings (`host`, `port`, `modbus_addr`, `read_eps`) directly in the Home Assistant UI without having to delete and re-add the inverter integration (#34).
+- **Test Suite**: Comprehensive integration and unit test suite achieving 100% test coverage across all platforms (#34).
+
+### Changed
+
+- **Translation Keys**: Migrated `select`, `number`, `switch`, and `button` platforms from hardcoded names to standard `translation_key` with localization in `strings.json` and `translations/en.json` (#34).
+- **Logging Privacy**: Redacted inverter serial numbers from coordinator name prefixes, update failure messages, and setup exception messages to protect hardware privacy in logs (#35).
+- **Reduced Log Noise**: Downgraded connection recycling on repeated timeouts from warning to debug, preventing warning logs when inverters go to sleep overnight (#35).
+
+### Verification
+
+- CI (`ruff`, `mypy`, `pytest`) green on `2f29154`.
+
 ## [0.3.12] - 2026-08-14
 
 ### Changed

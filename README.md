@@ -155,6 +155,8 @@ uv run ruff check .
 uv run mypy custom_components/sofar_modbus
 ```
 
+See [`RELEASING.md`](RELEASING.md) for the release checklist.
+
 ---
 
 ## 🗺️ Roadmap
