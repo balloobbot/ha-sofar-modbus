@@ -10,10 +10,17 @@ and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-08-15
+
 ### Changed
 
 - Stopped reaching into `sofar-modbus`'s private `_polled` attribute, now that it exposes
   `polled_components` publicly.
+
+### Verification
+
+- Full suite (`pytest tests/` — 73 passed), `ruff check`, `ruff format --check`, and
+  `mypy --explicit-package-bases custom_components/ tests/` all green on `48f6801`.
 
 ## [0.5.1] - 2026-08-15
 
