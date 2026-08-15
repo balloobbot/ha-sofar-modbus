@@ -168,8 +168,10 @@ async def test_communication_health_sensor(hass: HomeAssistant) -> None:
     assert success_rate_id is not None
     assert last_error_id is not None
     assert last_error_time_id is not None
-    assert ent_reg.async_get(last_error_id).disabled_by is not None
-    assert ent_reg.async_get(last_error_time_id).disabled_by is not None
+    last_error_entry = ent_reg.async_get(last_error_id)
+    last_error_time_entry = ent_reg.async_get(last_error_time_id)
+    assert last_error_entry is not None and last_error_entry.disabled_by is not None
+    assert last_error_time_entry is not None and last_error_time_entry.disabled_by is not None
 
     coordinator = entry.runtime_data
     last_error_sensor = SofarCommunicationHealthLastErrorSensor(coordinator)
@@ -179,8 +181,10 @@ async def test_communication_health_sensor(hass: HomeAssistant) -> None:
     # refreshes — see __init__.py's _async_startup_refresh — so more than one
     # cycle may already have landed; only the *rate*, not the cycle count, is
     # deterministic here).
-    assert hass.states.get(health_id).state == "good"
-    assert hass.states.get(success_rate_id).state == "100.0"
+    health_state = hass.states.get(health_id)
+    success_rate_state = hass.states.get(success_rate_id)
+    assert health_state is not None and health_state.state == "good"
+    assert success_rate_state is not None and success_rate_state.state == "100.0"
     assert last_error_sensor.native_value is None
     assert last_error_time_sensor.native_value is None
 
@@ -189,8 +193,10 @@ async def test_communication_health_sensor(hass: HomeAssistant) -> None:
     await coordinator.async_refresh()
     await hass.async_block_till_done()
 
-    assert hass.states.get(health_id).state != "good"
-    assert float(hass.states.get(success_rate_id).state) == coordinator.success_rate
+    health_state = hass.states.get(health_id)
+    success_rate_state = hass.states.get(success_rate_id)
+    assert health_state is not None and health_state.state != "good"
+    assert success_rate_state is not None and float(success_rate_state.state) == coordinator.success_rate
     assert coordinator.success_rate is not None and coordinator.success_rate < 100.0
     assert last_error_sensor.native_value is not None
     assert "ModbusTimeoutError" in last_error_sensor.native_value
