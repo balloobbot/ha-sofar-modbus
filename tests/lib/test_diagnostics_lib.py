@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import sys
+from collections import deque
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -15,7 +16,7 @@ from modbus_connection import ModbusTimeoutError  # noqa: E402
 from modbus_connection.mock import MockModbusConnection, MockModbusUnit  # noqa: E402
 from sofar_modbus.modern.device import SofarInverter  # noqa: E402
 
-from custom_components.sofar_modbus.coordinator import SofarDataUpdateCoordinator  # noqa: E402
+from custom_components.sofar_modbus.coordinator import _HEALTH_WINDOW, SofarDataUpdateCoordinator  # noqa: E402
 from custom_components.sofar_modbus.diagnostics import async_get_config_entry_diagnostics  # noqa: E402
 
 
@@ -43,6 +44,9 @@ def _coordinator(device: SofarInverter) -> SofarDataUpdateCoordinator:
     coordinator.device = device
     coordinator._consecutive_timeouts = 0
     coordinator._consecutive_failures = {}
+    coordinator._poll_outcomes = deque(maxlen=_HEALTH_WINDOW)
+    coordinator.last_error = None
+    coordinator.last_error_time = None
     coordinator._cycle = 0
     coordinator._fast = None
     coordinator._slow = None

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import deque
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -14,7 +15,7 @@ from modbus_connection.mock import MockModbusConnection, MockModbusUnit
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.sofar_modbus.const import CONF_MODBUS_ADDR, CONF_READ_EPS, DOMAIN
-from custom_components.sofar_modbus.coordinator import SofarDataUpdateCoordinator
+from custom_components.sofar_modbus.coordinator import _HEALTH_WINDOW, SofarDataUpdateCoordinator
 from custom_components.sofar_modbus.sensor import (
     SENSOR_DESCRIPTIONS,
     SofarSensor,
@@ -126,6 +127,55 @@ async def test_sensor_availability_on_component_failure(hass: HomeAssistant) -> 
     gen_state = hass.states.get(gen_today_id)
     assert gen_state is not None
     assert gen_state.state != "unavailable"
+
+
+async def test_communication_health_sensor(hass: HomeAssistant) -> None:
+    """Test the communication_health sensor's state and attributes track poll outcomes."""
+    mock_conn = MockModbusConnection()
+    unit = mock_conn.for_unit(1)
+    _seed_pv_inverter(unit)
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="SS2ES104N5S445",
+        data=MOCK_CONFIG,
+        title="Sofar Inverter (4.4 KTLX-G3)",
+    )
+    entry.add_to_hass(hass)
+
+    with patch("custom_components.sofar_modbus.build_connection", return_value=mock_conn):
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    ent_reg = er.async_get(hass)
+    health_id = ent_reg.async_get_entity_id("sensor", DOMAIN, "SS2ES104N5S445_communication_health")
+    assert health_id is not None
+
+    # Every poll during setup was clean (setup schedules its own background
+    # refreshes — see __init__.py's _async_startup_refresh — so more than one
+    # cycle may already have landed; only the *rate*, not the cycle count, is
+    # deterministic here).
+    state = hass.states.get(health_id)
+    assert state is not None
+    assert state.state == "Good"
+    assert state.attributes["success_rate"] == 100.0
+    assert state.attributes["last_error"] is None
+    assert state.attributes["last_error_time"] is None
+
+    # A failed poll degrades the state and populates the error attributes.
+    unit.fail_read(0x0484, ModbusTimeoutError("Timeout reading grid"))
+    coordinator = entry.runtime_data
+    await coordinator.async_refresh()
+    await hass.async_block_till_done()
+
+    state = hass.states.get(health_id)
+    assert state is not None
+    assert state.state != "Good"
+    assert state.attributes["success_rate"] == coordinator.success_rate
+    assert coordinator.success_rate is not None and coordinator.success_rate < 100.0
+    assert state.attributes["last_error"] is not None
+    assert "ModbusTimeoutError" in state.attributes["last_error"]
+    assert state.attributes["last_error_time"] is not None
 
 
 async def test_total_sensor_restore_data_parsing(hass: HomeAssistant) -> None:
@@ -264,6 +314,9 @@ async def test_coordinator_all_components_failed_exception_group() -> None:
     coord._cycle = 0
     coord._consecutive_timeouts = 0
     coord._consecutive_failures = {}
+    coord._poll_outcomes = deque(maxlen=_HEALTH_WINDOW)
+    coord.last_error = None
+    coord.last_error_time = None
 
     from sofar_modbus.model import UpdateReport
 

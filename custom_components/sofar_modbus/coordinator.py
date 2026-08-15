@@ -35,6 +35,7 @@ committed. See pending_or_live().
 from __future__ import annotations
 
 import logging
+from collections import deque
 from datetime import timedelta
 from typing import Any
 
@@ -42,6 +43,7 @@ from homeassistant.components.sensor import SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 from modbus_connection import ModbusConnection, ModbusConnectionError, ModbusError, ModbusTimeoutError
 
 from sofar_modbus.model import SofarComponentBase, UpdateReport
@@ -51,6 +53,7 @@ _LOGGER = logging.getLogger(__name__)
 
 _TIMEOUT_DISCONNECT_THRESHOLD = 3
 _SLOW_TIER_EVERY_N_CYCLES = 4  # ~60s at the 15s base scan interval
+_HEALTH_WINDOW = 20  # ~5min at the 15s base scan interval
 
 type SofarConfigEntry = ConfigEntry[SofarDataUpdateCoordinator]
 
@@ -98,6 +101,9 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
         self.device = device
         self._consecutive_timeouts = 0
         self._consecutive_failures: dict[str, int] = {}
+        self._poll_outcomes: deque[bool] = deque(maxlen=_HEALTH_WINDOW)
+        self.last_error: str | None = None
+        self.last_error_time: str | None = None
         self._cycle = 0
         self._fast: dict[str, SofarComponentBase] | None = None
         self._slow: dict[str, SofarComponentBase] | None = None
@@ -107,6 +113,24 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
             self._slow = {name: getattr(self.device, name) for name in self.device._polled if name not in volatile}
         self._force_slow_tier = False
         self.pending: dict[str, Any] = {}
+
+    @property
+    def success_rate(self) -> float | None:
+        """Percent of the last `_HEALTH_WINDOW` poll cycles with no failed component.
+
+        None until the first poll lands. Whole-device, not per-component: a
+        cycle only counts as a failure if a component's poll still shows up
+        in the returned report.failed after _retry_failed's one retry.
+        """
+        if not self._poll_outcomes:
+            return None
+        return round(100 * sum(self._poll_outcomes) / len(self._poll_outcomes), 1)
+
+    def _record_poll_outcome(self, success: bool, error: ModbusError | None) -> None:
+        self._poll_outcomes.append(success)
+        if error is not None:
+            self.last_error = f"{type(error).__name__}: {error}"
+            self.last_error_time = dt_util.utcnow().isoformat()
 
     @property
     def served_components(self) -> frozenset[str]:
@@ -147,11 +171,13 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
             report = await self._retry_failed(report)
             if not report.updated:
                 errors = list(report.failed.values())
+                self._record_poll_outcome(False, errors[0] if errors else None)
                 if not errors:
                     raise UpdateFailed(f"{self.name}: no component answered")
                 cause = errors[0] if len(errors) == 1 else ExceptionGroup("all components failed to refresh", errors)
                 raise UpdateFailed(f"{self.name}: no component answered: {errors[0]}") from cause
             self._consecutive_timeouts = 0
+            self._record_poll_outcome(not report.failed, next(iter(report.failed.values()), None))
             return report
         except ModbusTimeoutError as err:
             self._consecutive_timeouts += 1
@@ -163,10 +189,12 @@ class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):
                 )
                 await self.connection.disconnect()
                 self._consecutive_timeouts = 0
+            self._record_poll_outcome(False, err)
             raise UpdateFailed(str(err)) from err
         except ModbusError as err:
             # ModbusConnectionError (dead link) reaches here,
             # while per-block failures once alive are contained in UpdateReport.failed.
+            self._record_poll_outcome(False, err)
             raise UpdateFailed(str(err)) from err
 
     async def _async_first_poll(self) -> UpdateReport:

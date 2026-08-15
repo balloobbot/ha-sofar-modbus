@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import sys
+from collections import deque
 from pathlib import Path
 
 # coordinator.py uses package-relative imports (.const, .generated_sensors), so
@@ -25,7 +26,7 @@ from modbus_connection import IllegalDataAddressError, ModbusConnectionError, Mo
 from modbus_connection.mock import MockModbusConnection, MockModbusUnit  # noqa: E402
 from sofar_modbus.modern.device import SofarInverter  # noqa: E402
 
-from custom_components.sofar_modbus.coordinator import SofarDataUpdateCoordinator  # noqa: E402
+from custom_components.sofar_modbus.coordinator import _HEALTH_WINDOW, SofarDataUpdateCoordinator  # noqa: E402
 
 
 class _FakeConnection:
@@ -52,6 +53,9 @@ def _coordinator(device: SofarInverter, connection: _FakeConnection) -> SofarDat
     coordinator.device = device
     coordinator._consecutive_timeouts = 0
     coordinator._consecutive_failures = {}
+    coordinator._poll_outcomes = deque(maxlen=_HEALTH_WINDOW)
+    coordinator.last_error = None
+    coordinator.last_error_time = None
     coordinator._cycle = 0
     coordinator._fast = None
     coordinator._slow = None
@@ -110,6 +114,66 @@ async def test_a_failure_that_survives_retry_is_tracked_and_leaves_others_alone(
     assert coordinator._consecutive_timeouts == 0
     assert connection.disconnect_calls == 0, "should not disconnect for partial timeouts"
     print("failure-survives-retry-is-tracked: PASSED")
+
+
+async def test_success_rate_reflects_mixed_outcomes() -> None:
+    unit = MockModbusConnection().for_unit(1)
+    device = _device(unit)
+    coordinator = _coordinator(device, _FakeConnection())
+
+    await coordinator._async_update_data()  # cycle 1: clean, also settles tiers
+    assert coordinator.success_rate == 100.0
+
+    unit.fail_read(0x0484, ModbusTimeoutError("stuck"))
+    await coordinator._async_update_data()  # cycle 2: grid fails
+    unit.fail_read(0x0484, None)
+    await coordinator._async_update_data()  # cycle 3: recovered
+
+    assert list(coordinator._poll_outcomes) == [True, False, True]
+    assert coordinator.success_rate == round(100 * 2 / 3, 1)
+    print("success-rate-reflects-mixed-outcomes: PASSED")
+
+
+async def test_health_window_caps_and_drops_oldest_outcome() -> None:
+    unit = MockModbusConnection().for_unit(1)
+    device = _device(unit)
+    coordinator = _coordinator(device, _FakeConnection())
+
+    unit.fail_read(0x0484, ModbusTimeoutError("stuck"))
+    report = await coordinator._async_update_data()  # cycle 1: the one failure, also settles tiers
+    assert "grid" in report.failed
+    unit.fail_read(0x0484, None)
+    for _ in range(_HEALTH_WINDOW - 1):  # cycles 2..N: recovered
+        await coordinator._async_update_data()
+    assert len(coordinator._poll_outcomes) == _HEALTH_WINDOW, "window fills to its cap"
+    assert coordinator.success_rate == round(100 * (_HEALTH_WINDOW - 1) / _HEALTH_WINDOW, 1)
+
+    await coordinator._async_update_data()  # cycle N+1: one more success, evicting the oldest (failed) outcome
+    assert len(coordinator._poll_outcomes) == _HEALTH_WINDOW, "window stays capped, not unbounded"
+    assert coordinator.success_rate == 100.0, "the oldest (failed) outcome should have been evicted"
+    print("health-window-caps-and-drops-oldest: PASSED")
+
+
+async def test_last_error_is_recorded_and_not_cleared_by_a_later_success() -> None:
+    unit = MockModbusConnection().for_unit(1)
+    device = _device(unit)
+    coordinator = _coordinator(device, _FakeConnection())
+    await coordinator._async_update_data()  # settle tiers, clean
+    assert coordinator.last_error is None
+    assert coordinator.last_error_time is None
+
+    unit.fail_read(0x0484, ModbusTimeoutError("stuck"))
+    await coordinator._async_update_data()
+    assert coordinator.last_error is not None and "ModbusTimeoutError" in coordinator.last_error
+    recorded_at = coordinator.last_error_time
+    assert recorded_at is not None
+
+    unit.fail_read(0x0484, None)
+    report = await coordinator._async_update_data()
+    assert report.complete
+    assert coordinator.last_error is not None, "last_error means 'most recent problem', not 'current problem'"
+    assert coordinator.last_error_time == recorded_at, "an unrelated success must not clear or refresh it"
+    print("last-error-is-recorded-and-not-cleared: PASSED")
 
 
 async def test_disconnects_after_repeated_timeouts() -> None:
@@ -295,6 +359,9 @@ async def test_pre_identified_device_initializes_tiers_in_memory() -> None:
     coordinator.device = device
     coordinator._consecutive_timeouts = 0
     coordinator._consecutive_failures = {}
+    coordinator._poll_outcomes = deque(maxlen=_HEALTH_WINDOW)
+    coordinator.last_error = None
+    coordinator.last_error_time = None
     coordinator._cycle = 0
     coordinator._force_slow_tier = False
     # Coordinator __init__ logic
@@ -320,6 +387,9 @@ async def test_pre_identified_device_initializes_tiers_in_memory() -> None:
 async def main() -> None:
     await test_retry_recovers_a_transient_failure()
     await test_a_failure_that_survives_retry_is_tracked_and_leaves_others_alone()
+    await test_success_rate_reflects_mixed_outcomes()
+    await test_health_window_caps_and_drops_oldest_outcome()
+    await test_last_error_is_recorded_and_not_cleared_by_a_later_success()
     await test_disconnects_after_repeated_timeouts()
     await test_consecutive_timeouts_resets_on_successful_poll()
     await test_slow_tier_is_skipped_on_off_cycles()

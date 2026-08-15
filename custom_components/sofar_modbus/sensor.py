@@ -18,6 +18,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 from enum import IntEnum
+from typing import Any
 
 from homeassistant.components.sensor import (
     RestoreSensor,
@@ -41,9 +42,10 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .coordinator import SofarConfigEntry, SofarDataUpdateCoordinator
-from .entity import SofarEntity
+from .entity import SofarEntity, build_device_info
 
 # GENERATOR: hand-written below, preserved verbatim by scripts/generate_sofar_model.py.
 
@@ -74,7 +76,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_
     coordinator = entry.runtime_data
     served = coordinator.served_components
 
-    entities = [
+    entities: list[SensorEntity] = [
         (
             SofarTotalSensor
             if description.state_class in (SensorStateClass.TOTAL, SensorStateClass.TOTAL_INCREASING)
@@ -83,7 +85,48 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_
         for description in SENSOR_DESCRIPTIONS
         if description.component in served  # not served by this inverter type otherwise
     ]
+    entities.append(SofarCommunicationHealthSensor(coordinator))
     async_add_entities(entities)
+
+
+class SofarCommunicationHealthSensor(CoordinatorEntity[SofarDataUpdateCoordinator], SensorEntity):
+    """Whole-device link-quality summary: one bad cycle in the last 20 dents this, not any one entity.
+
+    Not a ``SofarEntity``: its data is coordinator bookkeeping, not a
+    component on ``coordinator.device``, so there's no single component to
+    gate ``available`` on the way ``SofarEntity.available`` does.
+    """
+
+    _attr_has_entity_name = True
+    _attr_name = "Communication Health"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = ["Good", "Degraded", "Poor", "Unknown"]
+
+    def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        serial = coordinator.device.serial_number
+        self._attr_unique_id = f"{serial}_communication_health"
+        self._attr_device_info = build_device_info(coordinator)
+
+    @property
+    def native_value(self) -> str:
+        rate = self.coordinator.success_rate
+        if rate is None:
+            return "Unknown"
+        if rate == 100:
+            return "Good"
+        if rate >= 80:
+            return "Degraded"
+        return "Poor"
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {
+            "success_rate": self.coordinator.success_rate,
+            "last_error": self.coordinator.last_error,
+            "last_error_time": self.coordinator.last_error_time,
+        }
 
 
 class SofarSensor(SofarEntity, SensorEntity):
