@@ -4,7 +4,7 @@
     "codeowners": ["@darkrain-nl"],
     "config_flow": true,
     "documentation": "https://github.com/darkrain-nl/ha-sofar-modbus",
-    "integration_type": "hub",
+    "integration_type": "device",
     "iot_class": "local_polling",
     "issue_tracker": "https://github.com/darkrain-nl/ha-sofar-modbus/issues",
     "requirements": [
