@@ -10,11 +10,18 @@ and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-16
+
 ### Added
 
 - A `button.*_sync_clock` entity on HYBRID inverters that writes the current local time to the
   inverter's clock via the library's `async_set_time()`. Fire-and-forget: the existing
   `sync_rtc_result` diagnostic sensor reports whether it took on the next poll.
+
+### Verification
+
+- `pytest tests/test_entity_shape.py tests/test_controls.py -q` and the full suite (79 passed).
+- `ruff check` / `mypy` clean on changed files.
 
 ## [0.5.3] - 2026-08-16
 
