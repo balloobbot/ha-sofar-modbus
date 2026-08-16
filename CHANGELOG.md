@@ -10,6 +10,8 @@ and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-08-16
+
 ### Fixed
 
 - `select.py`'s `_CHARGER_USE_MODE_OPTIONS` only mapped 6 of the library's 8 `ChargerUseMode`
@@ -44,6 +46,14 @@ and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged
   `sensor.py` sensor description block from upstream `plugin_sofar.py` is now done by asking a
   coding agent to resync it, rather than running a standalone generator script. See README's
   "The register map is generated" section.
+
+### Verification
+
+- Full suite (`uv run pytest` — 79 passed), `ruff check`, `ruff format --check`, and
+  `mypy --explicit-package-bases custom_components/ tests/` all green on `77b1d04`.
+- `tests/test_entity_shape.py`'s select-completeness test confirmed to fail against the
+  pre-fix `ChargerUseMode` map, verifying it actually catches the bug it targets.
+- `strings.json`/`translations/en.json` confirmed byte-identical and valid JSON.
 
 ## [0.5.2] - 2026-08-15
 
