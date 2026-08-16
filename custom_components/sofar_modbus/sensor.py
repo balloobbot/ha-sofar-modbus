@@ -47,14 +47,13 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .coordinator import SofarConfigEntry, SofarDataUpdateCoordinator
 from .entity import SofarEntity, build_device_info
 
-# GENERATOR: hand-written below, preserved verbatim by scripts/generate_sofar_model.py.
+# GENERATOR: hand-written below — preserve verbatim when resyncing the generated block further down.
 
 
 def _enum_label(member_name: str) -> str:
-    """Must match scripts/generate_sofar_model.py's _enum_label — the label
-    format used here and the `options` list declared on an ENUM sensor's
-    description have to agree, or HA logs a state that isn't one of the
-    declared options.
+    """The label format used here and the `options` list declared on an
+    ENUM sensor's description have to agree, or HA logs a state that isn't
+    one of the declared options.
     """
     return " ".join(word.capitalize() for word in member_name.split("_"))
 
@@ -266,8 +265,9 @@ class SofarTotalSensor(SofarEntity, RestoreSensor):
         return high_water
 
 
-# GENERATOR: generated below from plugin_sofar.py @ 27875b3b by
-# scripts/generate_sofar_model.py — do not hand-edit past this line.
+# GENERATOR: generated below from plugin_sofar.py @ 27875b3b — do not
+# hand-edit past this line. Resync by asking an agent to diff this block
+# against the current upstream plugin_sofar.py, not by hand.
 
 
 @dataclass(frozen=True, kw_only=True)

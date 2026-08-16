@@ -10,6 +10,13 @@ and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged
 
 ## [Unreleased]
 
+### Removed
+
+- The `scripts/` folder (`generate_sofar_model.py`, `extract_sofar_ast.py`) — regenerating the
+  `sensor.py` sensor description block from upstream `plugin_sofar.py` is now done by asking a
+  coding agent to resync it, rather than running a standalone generator script. See README's
+  "The register map is generated" section.
+
 ## [0.5.2] - 2026-08-15
 
 ### Changed
