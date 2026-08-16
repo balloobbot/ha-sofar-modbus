@@ -51,6 +51,8 @@ _CHARGER_USE_MODE_OPTIONS = {
     ChargerUseMode.PASSIVE_MODE: "passive_mode",
     ChargerUseMode.PEAK_CUT_MODE: "peak_cut_mode",
     ChargerUseMode.OFF_GRID_MODE: "off_grid_mode",
+    ChargerUseMode.GENERATOR_MODE: "generator_mode",
+    ChargerUseMode.FEED_IN_PRIORITY_MODE: "feed_in_priority_mode",
 }
 
 _EPS_MODE_OPTIONS = {

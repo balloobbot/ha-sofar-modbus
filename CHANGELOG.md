@@ -10,6 +10,41 @@ and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged
 
 ## [Unreleased]
 
+### Fixed
+
+- `select.py`'s `_CHARGER_USE_MODE_OPTIONS` only mapped 6 of the library's 8 `ChargerUseMode`
+  values — a HYBRID inverter reporting `GENERATOR_MODE` or `FEED_IN_PRIORITY_MODE` would raise
+  an uncaught `KeyError` in `current_option`, surfacing as the entity going unavailable. Found
+  during a full manual audit of every entity this integration creates, cross-checked against
+  the pinned `sofar-modbus` library's actual enum values.
+- 9 `sensor.py` rows were missing a `device_class` their unit and sibling entities already
+  called for: 6 `bat_config_*` voltage sensors → `VOLTAGE`, 2 `bat_config_*` current-limit
+  sensors → `CURRENT`, `waiting_time` → `DURATION`.
+- `battery_capacity_1` through `_8` were missing `device_class=BATTERY`, unlike their aggregate
+  sibling `battery_capacity_total` which already set it for the identical concept.
+- The `_total` side of all 6 `_today`/`_total` energy sensor pairs (`solar_generation`,
+  `load_consumption`, `import_energy`, `export_energy`, `battery_input_energy`,
+  `battery_output_energy`) was missing `suggested_display_precision=2`, unlike its `_today`
+  sibling.
+- `bat_config_charging_voltage` was the only one of 19 `bat_config_*` sensors not disabled by
+  default (`entity_registry_enabled_default=False`).
+
+### Added
+
+- `tests/test_entity_shape.py` — permanent structural checks so these bug classes can't
+  silently regress: every `device_class=ENUM` sensor's `options` must match `_enum_label()`
+  over its underlying library enum, every hand-maintained `select.py` option dict must cover
+  its library enum's full member set (this is what would have caught the `ChargerUseMode` bug
+  above), and every `translation_key` in use must resolve in `strings.json` with
+  `translations/en.json` kept byte-identical.
+
+### Removed
+
+- The `scripts/` folder (`generate_sofar_model.py`, `extract_sofar_ast.py`) — regenerating the
+  `sensor.py` sensor description block from upstream `plugin_sofar.py` is now done by asking a
+  coding agent to resync it, rather than running a standalone generator script. See README's
+  "The register map is generated" section.
+
 ## [0.5.2] - 2026-08-15
 
 ### Changed

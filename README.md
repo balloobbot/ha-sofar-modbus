@@ -127,12 +127,7 @@ graph TD
 
 ### The register map is generated
 
-The sensor description metadata in `custom_components/sofar_modbus/sensor.py` (below the `# GENERATOR: generated below` marker) is produced by [`scripts/generate_sofar_model.py`](scripts/generate_sofar_model.py), which extracts HA-facing metadata directly from the upstream plugin source.
-
-```bash
-uv run python scripts/extract_sofar_ast.py       # sanity-check counts against upstream
-uv run python scripts/generate_sofar_model.py
-```
+The sensor description metadata in `custom_components/sofar_modbus/sensor.py` (below the `# GENERATOR: generated below` marker) is extracted from the upstream `homeassistant-solax-modbus` `plugin_sofar.py` source, pinned to the commit noted in that marker. There's no standalone generator script for this anymore — when upstream changes, ask a coding agent (e.g. Claude) to resync the block against the current `plugin_sofar.py`.
 
 ---
 

@@ -93,7 +93,9 @@
                     "timing_mode": "Timing Mode",
                     "passive_mode": "Passive Mode",
                     "peak_cut_mode": "Peak Cut Mode",
-                    "off_grid_mode": "Off Grid Mode"
+                    "off_grid_mode": "Off Grid Mode",
+                    "generator_mode": "Generator Mode",
+                    "feed_in_priority_mode": "Feed In Priority Mode"
                 }
             },
             "eps_control": {

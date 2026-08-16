@@ -47,14 +47,13 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .coordinator import SofarConfigEntry, SofarDataUpdateCoordinator
 from .entity import SofarEntity, build_device_info
 
-# GENERATOR: hand-written below, preserved verbatim by scripts/generate_sofar_model.py.
+# GENERATOR: hand-written below — preserve verbatim when resyncing the generated block further down.
 
 
 def _enum_label(member_name: str) -> str:
-    """Must match scripts/generate_sofar_model.py's _enum_label — the label
-    format used here and the `options` list declared on an ENUM sensor's
-    description have to agree, or HA logs a state that isn't one of the
-    declared options.
+    """The label format used here and the `options` list declared on an
+    ENUM sensor's description have to agree, or HA logs a state that isn't
+    one of the declared options.
     """
     return " ".join(word.capitalize() for word in member_name.split("_"))
 
@@ -266,8 +265,9 @@ class SofarTotalSensor(SofarEntity, RestoreSensor):
         return high_water
 
 
-# GENERATOR: generated below from plugin_sofar.py @ 27875b3b by
-# scripts/generate_sofar_model.py — do not hand-edit past this line.
+# GENERATOR: generated below from plugin_sofar.py @ 27875b3b — do not
+# hand-edit past this line. Resync by asking an agent to diff this block
+# against the current upstream plugin_sofar.py, not by hand.
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -376,6 +376,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         key="waiting_time",
         component="state",
         translation_key="waiting_time",
+        device_class=SensorDeviceClass.DURATION,
         native_unit_of_measurement=UnitOfTime.SECONDS,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
@@ -1449,6 +1450,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         key="battery_capacity_1",
         component="battery_1_2",
         translation_key="battery_capacity_1",
+        device_class=SensorDeviceClass.BATTERY,
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
     ),
@@ -1508,6 +1510,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         key="battery_capacity_2",
         component="battery_1_2",
         translation_key="battery_capacity_2",
+        device_class=SensorDeviceClass.BATTERY,
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
@@ -1570,6 +1573,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         key="battery_capacity_3",
         component="battery_3_8",
         translation_key="battery_capacity_3",
+        device_class=SensorDeviceClass.BATTERY,
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
@@ -1632,6 +1636,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         key="battery_capacity_4",
         component="battery_3_8",
         translation_key="battery_capacity_4",
+        device_class=SensorDeviceClass.BATTERY,
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
@@ -1694,6 +1699,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         key="battery_capacity_5",
         component="battery_3_8",
         translation_key="battery_capacity_5",
+        device_class=SensorDeviceClass.BATTERY,
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
@@ -1756,6 +1762,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         key="battery_capacity_6",
         component="battery_3_8",
         translation_key="battery_capacity_6",
+        device_class=SensorDeviceClass.BATTERY,
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
@@ -1818,6 +1825,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         key="battery_capacity_7",
         component="battery_3_8",
         translation_key="battery_capacity_7",
+        device_class=SensorDeviceClass.BATTERY,
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
@@ -1880,6 +1888,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         key="battery_capacity_8",
         component="battery_3_8",
         translation_key="battery_capacity_8",
+        device_class=SensorDeviceClass.BATTERY,
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
@@ -1941,6 +1950,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
+        suggested_display_precision=2,
     ),
     SofarSensorDescription(
         key="load_consumption_today",
@@ -1958,6 +1968,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
+        suggested_display_precision=2,
     ),
     SofarSensorDescription(
         key="import_energy_today",
@@ -1977,6 +1988,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         icon="mdi:home-import-outline",
+        suggested_display_precision=2,
     ),
     SofarSensorDescription(
         key="export_energy_today",
@@ -1996,6 +2008,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         icon="mdi:home-export-outline",
+        suggested_display_precision=2,
     ),
     SofarSensorDescription(
         key="battery_input_energy_today",
@@ -2015,6 +2028,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         icon="mdi:battery-arrow-up",
+        suggested_display_precision=2,
     ),
     SofarSensorDescription(
         key="battery_output_energy_today",
@@ -2034,6 +2048,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         icon="mdi:battery-arrow-down",
+        suggested_display_precision=2,
     ),
     SofarSensorDescription(
         key="passive_eps_wait_time",
@@ -2104,6 +2119,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         key="bat_config_overvoltage_protection",
         component="battery_config_id",
         translation_key="bat_config_overvoltage_protection",
+        device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
@@ -2113,14 +2129,17 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         key="bat_config_charging_voltage",
         component="battery_config",
         translation_key="bat_config_charging_voltage",
+        device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
+        entity_registry_enabled_default=False,
     ),
     SofarSensorDescription(
         key="bat_config_undervoltage_protection",
         component="battery_config",
         translation_key="bat_config_undervoltage_protection",
+        device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
@@ -2130,6 +2149,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         key="bat_config_minimum_discharge_voltage",
         component="battery_config",
         translation_key="bat_config_minimum_discharge_voltage",
+        device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
@@ -2139,6 +2159,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         key="bat_config_maximum_charge_current_limit",
         component="battery_config",
         translation_key="bat_config_maximum_charge_current_limit",
+        device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
@@ -2149,6 +2170,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         key="bat_config_maximum_discharge_current_limit",
         component="battery_config",
         translation_key="bat_config_maximum_discharge_current_limit",
+        device_class=SensorDeviceClass.CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
@@ -2186,6 +2208,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         key="bat_config_rated_battery_voltage",
         component="battery_config",
         translation_key="bat_config_rated_battery_voltage",
+        device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
@@ -2247,6 +2270,7 @@ SENSOR_DESCRIPTIONS: tuple[SofarSensorDescription, ...] = (
         key="bat_config_voltage_float",
         component="battery_config",
         translation_key="bat_config_voltage_float",
+        device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:battery-check-outline",
