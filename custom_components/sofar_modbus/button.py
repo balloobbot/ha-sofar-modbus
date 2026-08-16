@@ -10,6 +10,7 @@ refresh so the next poll confirms what actually landed.
 from __future__ import annotations
 
 from homeassistant.components.button import ButtonEntity
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -31,6 +32,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_
     if "passive" in served:
         entities.append(PassiveTimeoutUpdateButton(coordinator))
         entities.append(PassivePowerUpdateButton(coordinator))
+    if "rtc_sync" in served:
+        entities.append(RtcSyncButton(coordinator))
     async_add_entities(entities)
 
 
@@ -125,4 +128,26 @@ class PassivePowerUpdateButton(SofarEntity, ButtonEntity):
         self.coordinator.pending.pop("passive_mode_grid_power", None)
         self.coordinator.pending.pop("passive_mode_battery_power_min", None)
         self.coordinator.pending.pop("passive_mode_battery_power_max", None)
+        await self.coordinator.async_request_refresh()
+
+
+class RtcSyncButton(SofarEntity, ButtonEntity):
+    """RTC: Sync — writes the current local time to the inverter's clock.
+
+    Unlike the paired-write buttons above there's no staged value to resolve:
+    the write is just "now". ``rtc_sync``'s own sensor reports whether it
+    took on the next poll — see ``sync_rtc_result`` in sensor.py.
+    """
+
+    _attr_translation_key = "rtc_sync"
+    _attr_entity_category = EntityCategory.CONFIG
+
+    def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
+        super().__init__(coordinator, "rtc_sync", "rtc_sync")
+
+    async def async_press(self) -> None:
+        try:
+            await self.coordinator.device.async_set_time()
+        except ModbusError as err:
+            raise HomeAssistantError(f"could not sync inverter clock: {err}") from err
         await self.coordinator.async_request_refresh()

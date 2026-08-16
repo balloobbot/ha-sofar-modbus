@@ -47,6 +47,9 @@
             },
             "passive_power_update": {
                 "name": "Passive power update"
+            },
+            "rtc_sync": {
+                "name": "Sync clock"
             }
         },
         "number": {
