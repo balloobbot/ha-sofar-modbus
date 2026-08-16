@@ -344,6 +344,19 @@ async def test_hybrid_controls_lifecycle(hass: HomeAssistant) -> None:
     assert "passive_mode_battery_power_min" not in coordinator.pending
     assert "passive_mode_battery_power_max" not in coordinator.pending
 
+    # 5. RTC Sync button (fire-and-forget: no staged value, just "now")
+    rtc_sync_btn_id = ent_reg.async_get_entity_id("button", DOMAIN, "SP1XXES100XX_rtc_sync")
+    assert rtc_sync_btn_id is not None
+
+    with patch.object(coordinator.device, "async_set_time") as mock_set_time:
+        await hass.services.async_call(
+            "button",
+            "press",
+            {"entity_id": rtc_sync_btn_id},
+            blocking=True,
+        )
+    mock_set_time.assert_awaited_once_with()
+
 
 async def test_button_errors_when_uninitialized_or_comm_failure(hass: HomeAssistant) -> None:
     """Test button entity error handling when values are missing or modbus fails."""
@@ -480,3 +493,10 @@ async def test_select_and_hybrid_button_error_branches(hass: HomeAssistant) -> N
     with patch.object(coord.device.passive, "async_write_power", side_effect=ModbusConnectionError("Power write error")):
         with pytest.raises(HomeAssistantError, match="could not write passive-mode power setpoints"):
             await hass.services.async_call("button", "press", {"entity_id": power_btn_id}, blocking=True)
+
+    # RTC sync button error
+    rtc_sync_btn_id = ent_reg.async_get_entity_id("button", DOMAIN, "SP1XXES100XX_rtc_sync")
+    assert rtc_sync_btn_id is not None
+    with patch.object(coord.device, "async_set_time", side_effect=ModbusConnectionError("Clock write error")):
+        with pytest.raises(HomeAssistantError, match="could not sync inverter clock"):
+            await hass.services.async_call("button", "press", {"entity_id": rtc_sync_btn_id}, blocking=True)

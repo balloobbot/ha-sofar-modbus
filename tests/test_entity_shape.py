@@ -70,6 +70,7 @@ _OTHER_WRITE_ENTITY_CLASSES: list[tuple[str, type[Entity]]] = [
     ("button", button.ActivePowerControlUpdateButton),
     ("button", button.PassiveTimeoutUpdateButton),
     ("button", button.PassivePowerUpdateButton),
+    ("button", button.RtcSyncButton),
 ]
 
 

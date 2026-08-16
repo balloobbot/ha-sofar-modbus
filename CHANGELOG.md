@@ -10,6 +10,12 @@ and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged
 
 ## [Unreleased]
 
+### Added
+
+- A `button.*_sync_clock` entity on HYBRID inverters that writes the current local time to the
+  inverter's clock via the library's `async_set_time()`. Fire-and-forget: the existing
+  `sync_rtc_result` diagnostic sensor reports whether it took on the next poll.
+
 ## [0.5.3] - 2026-08-16
 
 ### Fixed
