@@ -37,7 +37,7 @@ _SERIAL_PREFIX_LEN = 10
 
 
 async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: SofarConfigEntry) -> dict[str, Any]:
-    coordinator = entry.runtime_data
+    coordinator = entry.runtime_data.readings
     device = coordinator.device
     served = coordinator.served_components
 

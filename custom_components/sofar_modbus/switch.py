@@ -14,13 +14,13 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from sofar_modbus.modern import PowerControlFlags  # the PyPI library, not a self-import — see __init__.py
 
-from .coordinator import SofarConfigEntry, SofarDataUpdateCoordinator
+from .coordinator import SofarConfigEntry, SofarSettingsCoordinator
 from .entity import SofarEntity
 
 _KEY = "active_power_control_enabled"
 
 
-def resolve_active_power_control_enabled(coordinator: SofarDataUpdateCoordinator) -> bool | None:
+def resolve_active_power_control_enabled(coordinator: SofarSettingsCoordinator) -> bool | None:
     """The enabled state this switch is currently showing — pending or live.
 
     Shared with button.py so "Active Power Control: Update" commits exactly
@@ -32,18 +32,18 @@ def resolve_active_power_control_enabled(coordinator: SofarDataUpdateCoordinator
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
-    coordinator = entry.runtime_data
+    coordinator = entry.runtime_data.settings
     served = coordinator.served_components
     if "active_power_control" in served:
         async_add_entities([ActivePowerControlSwitch(coordinator)])
 
 
-class ActivePowerControlSwitch(SofarEntity, SwitchEntity):
+class ActivePowerControlSwitch(SofarEntity[SofarSettingsCoordinator], SwitchEntity):
     """Active Power Control — staged; press Update to apply."""
 
     _attr_translation_key = _KEY
 
-    def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: SofarSettingsCoordinator) -> None:
         super().__init__(coordinator, _KEY, "active_power_control")
 
     @property

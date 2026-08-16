@@ -28,7 +28,7 @@ from sofar_modbus.modern.device import SofarInverter, identify
 
 from .connection import build_connection, unit_id
 from .const import CONF_READ_EPS, DEFAULT_SCAN_INTERVAL, DOMAIN
-from .coordinator import SofarConfigEntry, SofarDataUpdateCoordinator
+from .coordinator import SofarConfigEntry, SofarDataUpdateCoordinator, SofarRuntimeData, SofarSettingsCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,6 +47,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry) -> boo
         device.prime(serial, model)
 
     coordinator = SofarDataUpdateCoordinator(hass, entry, connection, device, DEFAULT_SCAN_INTERVAL)
+    settings_coordinator = SofarSettingsCoordinator(hass, entry, device)
 
     if not device.inverter_type:
         # Fallback for entries where inverter type could not be determined in-memory:
@@ -55,18 +56,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry) -> boo
         if not device.inverter_type:
             raise ConfigEntryNotReady(f"Unrecognized Sofar inverter model for {entry.title}")
 
-    entry.runtime_data = coordinator
+    entry.runtime_data = SofarRuntimeData(coordinator, settings_coordinator)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     # Schedule background refresh:
-    # If pre-identified, both fast tier and slow tier refresh in the background.
-    # Otherwise, the fast tier was already refreshed by async_config_entry_first_refresh.
+    # If pre-identified, both polls run in the background.
+    # Otherwise, the measurements were already refreshed by async_config_entry_first_refresh.
     if serial and inverter_type:
 
         async def _async_startup_refresh() -> None:
             await coordinator.async_refresh()
-            await coordinator.async_refresh_slow_tier()
+            await settings_coordinator.async_refresh()
 
         entry.async_create_background_task(
             hass,
@@ -76,8 +77,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry) -> boo
     else:
         entry.async_create_background_task(
             hass,
-            coordinator.async_refresh_slow_tier(),
-            name=f"{DOMAIN}_{entry.unique_id}_initial_slow_refresh",
+            settings_coordinator.async_refresh(),
+            name=f"{DOMAIN}_{entry.unique_id}_initial_settings_refresh",
         )
     return True
 

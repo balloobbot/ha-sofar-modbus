@@ -27,7 +27,7 @@ from custom_components.sofar_modbus.button import (  # noqa: E402
     PassivePowerUpdateButton,
     PassiveTimeoutUpdateButton,
 )
-from custom_components.sofar_modbus.coordinator import SofarDataUpdateCoordinator  # noqa: E402
+from custom_components.sofar_modbus.coordinator import SofarSettingsCoordinator  # noqa: E402
 from custom_components.sofar_modbus.number import (  # noqa: E402
     ActivePowerExportLimitNumber,
     FeedInMaxPowerNumber,
@@ -46,11 +46,6 @@ from custom_components.sofar_modbus.select import (  # noqa: E402
 from custom_components.sofar_modbus.switch import ActivePowerControlSwitch  # noqa: E402
 
 
-class _FakeConnection:
-    async def disconnect(self) -> None:
-        pass
-
-
 def _seed_serial(unit: MockModbusUnit, serial: str) -> None:
     padded = serial.ljust(14, "\x00")
     for i in range(7):
@@ -58,7 +53,7 @@ def _seed_serial(unit: MockModbusUnit, serial: str) -> None:
         unit.holding[0x445 + i] = (hi << 8) | lo
 
 
-class _TestCoordinator(SofarDataUpdateCoordinator):
+class _TestCoordinator(SofarSettingsCoordinator):
     _refresh_calls: int
 
 
@@ -81,7 +76,6 @@ async def _device_and_coordinator() -> tuple[SofarInverter, _TestCoordinator]:
 
     coordinator = _TestCoordinator.__new__(_TestCoordinator)
     coordinator.name = "test"
-    coordinator.connection = _FakeConnection()  # type: ignore[assignment]
     coordinator.device = device
     coordinator.config_entry = SimpleNamespace(title="Test Sofar")  # type: ignore[assignment]
     coordinator.data = report
@@ -124,7 +118,6 @@ async def _hybrid_device_and_coordinator() -> tuple[SofarInverter, _TestCoordina
 
     coordinator = _TestCoordinator.__new__(_TestCoordinator)
     coordinator.name = "test-hybrid"
-    coordinator.connection = _FakeConnection()  # type: ignore[assignment]
     coordinator.device = device
     coordinator.config_entry = SimpleNamespace(title="Test Sofar Hybrid")  # type: ignore[assignment]
     coordinator.data = report

@@ -44,7 +44,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .coordinator import SofarConfigEntry, SofarDataUpdateCoordinator
+from .coordinator import SofarConfigEntry, SofarCoordinator, SofarDataUpdateCoordinator
 from .entity import SofarEntity, build_device_info
 
 # GENERATOR: hand-written below — preserve verbatim when resyncing the generated block further down.
@@ -72,7 +72,8 @@ _TOTAL_INCREASING_DIP_TOLERANCE = 0.01
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
-    coordinator = entry.runtime_data
+    data = entry.runtime_data
+    coordinator = data.readings
     served = coordinator.served_components
 
     entities: list[SensorEntity] = [
@@ -80,7 +81,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_
             SofarTotalSensor
             if description.state_class in (SensorStateClass.TOTAL, SensorStateClass.TOTAL_INCREASING)
             else SofarSensor
-        )(coordinator, description)
+        )(data.coordinator_for(description.component), description)
         for description in SENSOR_DESCRIPTIONS
         if description.component in served  # not served by this inverter type otherwise
     ]
@@ -184,12 +185,12 @@ class SofarCommunicationHealthLastErrorTimeSensor(_SofarCommunicationHealthEntit
         return self.coordinator.last_error_time
 
 
-class SofarSensor(SofarEntity, SensorEntity):
+class SofarSensor(SofarEntity[SofarCoordinator], SensorEntity):
     """A read-only value off one of the device's Components."""
 
     entity_description: SofarSensorDescription
 
-    def __init__(self, coordinator: SofarDataUpdateCoordinator, description: SofarSensorDescription) -> None:
+    def __init__(self, coordinator: SofarCoordinator, description: SofarSensorDescription) -> None:
         super().__init__(coordinator, description.key, description.component)
         self.entity_description = description
 
@@ -205,7 +206,7 @@ class SofarSensor(SofarEntity, SensorEntity):
         return cast("str | int | float | date | None", value)
 
 
-class SofarTotalSensor(SofarEntity, RestoreSensor):
+class SofarTotalSensor(SofarEntity[SofarCoordinator], RestoreSensor):
     """A long-term statistic: it holds its last value, and may outlive the device.
 
     Restored on startup so energy dashboard sensors never show `unknown`
@@ -215,7 +216,7 @@ class SofarTotalSensor(SofarEntity, RestoreSensor):
 
     entity_description: SofarSensorDescription
 
-    def __init__(self, coordinator: SofarDataUpdateCoordinator, description: SofarSensorDescription) -> None:
+    def __init__(self, coordinator: SofarCoordinator, description: SofarSensorDescription) -> None:
         super().__init__(coordinator, description.key, description.component)
         self.entity_description = description
         self._total_increasing_high_water: float | None = None

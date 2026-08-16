@@ -23,7 +23,7 @@
 - ⚡ **Modern Async Core**: Built on [`modbus-connection`](https://github.com/home-assistant-libs/modbus-connection) with typed register planning, automatic reconnects, and zero custom socket hacks.
 - 🛡️ **Fault-Tolerant Polling**:
   - **Single-Component Resilience**: A temporary slow or failed component block doesn't fail the rest of the poll.
-  - **Tiered Scan Cadence**: Fast telemetry polling (~5s) with slow background polling (~60s) for static parameters.
+  - **Split Scan Cadence**: What the inverter measures is polled every ~5s; what it has been configured to do every 5 minutes, and immediately after a write.
   - **Retry-Before-Fail**: Immediate transient retry before marking a component failed.
   - **Transition-Only Logging**: Clear warning logged on initial failure transition; zero poll spam.
   - **Dead-Link Recovery**: Automatic transport disconnect and clean reconnect on wedged serial bridges.
@@ -141,7 +141,7 @@ uv sync --group test --group dev
 
 # Run automated test suite
 uv run python tests/lib/test_smoke.py          # Probe -> device -> entity filter
-uv run python tests/lib/test_coordinator.py    # Resilience, retry & tiered cadence
+uv run python tests/lib/test_coordinator.py    # Resilience, retry & the two poll cadences
 uv run python tests/lib/test_diagnostics.py    # Diagnostics payload validation
 uv run python tests/lib/test_write_entities.py # Staged write controls & mock backend
 
@@ -158,7 +158,7 @@ See [`RELEASING.md`](RELEASING.md) for the release checklist.
 
 - [x] **Phase 0/1 — Core Sensors**: Read-only sensors on `modbus-connection`.
 - [x] **Phase 2 — Write Controls**: `select`/`number`/`switch`/`button` for Remote Switch, Feed-In Limitation, and Active Power Control.
-- [x] **Phase 3 — Resilience Engine**: Retry-before-fail, transition-only warning logging, tiered scan cadence, write-trigger refresh, diagnostics download.
+- [x] **Phase 3 — Resilience Engine**: Retry-before-fail, transition-only warning logging, split scan cadence, write-trigger refresh, diagnostics download.
 - [x] **Phase 4 — Hybrid Controls**: Charger Use Mode, EPS Mode, and Passive Mode write entities.
 - [x] **Phase 5 — Energy Dashboard**: Native `TOTAL_INCREASING` sensors with `RestoreSensor` state restoration.
 - [x] **Brand Assets**: Bundled high-resolution light and dark icons and logos.

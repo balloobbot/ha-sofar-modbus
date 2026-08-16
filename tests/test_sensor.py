@@ -118,7 +118,7 @@ async def test_sensor_availability_on_component_failure(hass: HomeAssistant) -> 
     # Fail grid reads (register 0x0484)
     unit.fail_read(0x0484, ModbusTimeoutError("Timeout reading grid"))
 
-    coordinator = entry.runtime_data
+    coordinator = entry.runtime_data.readings
     await coordinator.async_refresh()
     await hass.async_block_till_done()
 
@@ -175,7 +175,7 @@ async def test_communication_health_sensor(hass: HomeAssistant) -> None:
     assert last_error_entry is not None and last_error_entry.disabled_by is not None
     assert last_error_time_entry is not None and last_error_time_entry.disabled_by is not None
 
-    coordinator = entry.runtime_data
+    coordinator = entry.runtime_data.readings
     last_error_sensor = SofarCommunicationHealthLastErrorSensor(coordinator)
     last_error_time_sensor = SofarCommunicationHealthLastErrorTimeSensor(coordinator)
 
@@ -222,7 +222,7 @@ async def test_communication_health_sensor_degraded_bucket(hass: HomeAssistant) 
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done(wait_background_tasks=True)
 
-    coordinator = entry.runtime_data
+    coordinator = entry.runtime_data.readings
     coordinator._poll_outcomes.clear()
     coordinator._poll_outcomes.extend([True] * 9 + [False])  # 90% success -> "degraded" bucket, not "good"/"poor"
 
@@ -254,7 +254,7 @@ async def test_communication_health_entities_stay_available_on_dead_link(hass: H
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done(wait_background_tasks=True)
 
-    coordinator = entry.runtime_data
+    coordinator = entry.runtime_data.readings
     health_sensor = SofarCommunicationHealthSensor(coordinator)
     success_rate_sensor = SofarCommunicationHealthSuccessRateSensor(coordinator)
     last_error_sensor = SofarCommunicationHealthLastErrorSensor(coordinator)
@@ -284,7 +284,7 @@ async def test_total_sensor_restore_data_parsing(hass: HomeAssistant) -> None:
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done(wait_background_tasks=True)
 
-    coord = entry.runtime_data
+    coord = entry.runtime_data.readings
     desc = next(d for d in SENSOR_DESCRIPTIONS if d.key == "load_consumption_total")
 
     # Valid numeric restoration before poll (live value is None)
@@ -336,7 +336,7 @@ async def test_smoothed_total_increasing_dip_tolerance(hass: HomeAssistant) -> N
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done(wait_background_tasks=True)
 
-    coord = entry.runtime_data
+    coord = entry.runtime_data.readings
     desc = next(d for d in SENSOR_DESCRIPTIONS if d.key == "load_consumption_total")
     sensor = SofarTotalSensor(coord, desc)
     sensor._attr_native_value = 1000.0
@@ -371,7 +371,7 @@ async def test_sensor_dead_link_unavailable(hass: HomeAssistant) -> None:
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done(wait_background_tasks=True)
 
-    coord = entry.runtime_data
+    coord = entry.runtime_data.readings
     desc = next(d for d in SENSOR_DESCRIPTIONS if d.key == "grid_frequency")
     sensor = SofarSensor(coord, desc)
     coord.last_update_success = False
@@ -397,10 +397,6 @@ async def test_coordinator_all_components_failed_exception_group() -> None:
 
     coord = SofarDataUpdateCoordinator.__new__(SofarDataUpdateCoordinator)
     coord.name = "test"
-    coord._fast = {"c1": SimpleNamespace(), "c2": SimpleNamespace()}  # type: ignore[assignment,dict-item]
-    coord._slow = {}
-    coord._force_slow_tier = False
-    coord._cycle = 0
     coord._consecutive_timeouts = 0
     coord._consecutive_failures = {}
     coord._poll_outcomes = deque(maxlen=_HEALTH_WINDOW)
@@ -417,7 +413,7 @@ async def test_coordinator_all_components_failed_exception_group() -> None:
         },
     )
 
-    coord._poll = AsyncMock(return_value=failed_report)  # type: ignore[method-assign]
+    coord._async_poll_device = AsyncMock(return_value=failed_report)  # type: ignore[method-assign]
     coord._retry_failed = AsyncMock(return_value=failed_report)  # type: ignore[method-assign]
 
     # 1. Multiple errors -> ExceptionGroup
@@ -428,7 +424,7 @@ async def test_coordinator_all_components_failed_exception_group() -> None:
 
     # 3. Empty report (no updated and no failed)
     empty_report = UpdateReport(updated=set(), failed={})
-    coord._poll = AsyncMock(return_value=empty_report)  # type: ignore[method-assign]
+    coord._async_poll_device = AsyncMock(return_value=empty_report)  # type: ignore[method-assign]
     coord._retry_failed = AsyncMock(return_value=empty_report)  # type: ignore[method-assign]
     with pytest.raises(UpdateFailed) as exc_info_empty:
         await coord._async_update_data()

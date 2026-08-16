@@ -17,7 +17,12 @@ from modbus_connection import ModbusTimeoutError  # noqa: E402
 from modbus_connection.mock import MockModbusConnection, MockModbusUnit  # noqa: E402
 from sofar_modbus.modern.device import SofarInverter  # noqa: E402
 
-from custom_components.sofar_modbus.coordinator import _HEALTH_WINDOW, SofarDataUpdateCoordinator  # noqa: E402
+from custom_components.sofar_modbus.coordinator import (  # noqa: E402
+    _HEALTH_WINDOW,
+    SofarDataUpdateCoordinator,
+    SofarRuntimeData,
+    SofarSettingsCoordinator,
+)
 from custom_components.sofar_modbus.diagnostics import async_get_config_entry_diagnostics  # noqa: E402
 
 
@@ -28,7 +33,9 @@ class _FakeConnection:
 
 class _FakeEntry:
     def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
-        self.runtime_data = coordinator
+        settings = SofarSettingsCoordinator.__new__(SofarSettingsCoordinator)
+        settings.device = coordinator.device
+        self.runtime_data = SofarRuntimeData(coordinator, settings)
 
 
 def _seed_serial(unit: MockModbusUnit, serial: str) -> None:
@@ -48,10 +55,6 @@ def _coordinator(device: SofarInverter) -> SofarDataUpdateCoordinator:
     coordinator._poll_outcomes = deque(maxlen=_HEALTH_WINDOW)
     coordinator.last_error = None
     coordinator.last_error_time = None
-    coordinator._cycle = 0
-    coordinator._fast = None
-    coordinator._slow = None
-    coordinator._force_slow_tier = False
     coordinator.data = None  # type: ignore[assignment]
     return coordinator
 

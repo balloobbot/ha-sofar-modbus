@@ -18,13 +18,13 @@ from modbus_connection import ModbusError
 
 from sofar_modbus.variants import HYBRID, PV, matches
 
-from .coordinator import SofarConfigEntry, SofarDataUpdateCoordinator
+from .coordinator import SofarConfigEntry, SofarSettingsCoordinator
 from .entity import SofarEntity
 from .switch import resolve_active_power_control_enabled
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
-    coordinator = entry.runtime_data
+    coordinator = entry.runtime_data.settings
     served = coordinator.served_components
     entities: list[ButtonEntity] = []
     if "feed_in" in served:
@@ -40,12 +40,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_
     async_add_entities(entities)
 
 
-class FeedInUpdateButton(SofarEntity, ButtonEntity):
+class FeedInUpdateButton(SofarEntity[SofarSettingsCoordinator], ButtonEntity):
     """FeedIn: Update — writes the staged (or last-read) mode and power together."""
 
     _attr_translation_key = "feedin_update"
 
-    def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: SofarSettingsCoordinator) -> None:
         super().__init__(coordinator, "feedin_update", "feed_in")
 
     async def async_press(self) -> None:
@@ -63,12 +63,12 @@ class FeedInUpdateButton(SofarEntity, ButtonEntity):
         await self.coordinator.async_request_refresh()
 
 
-class ActivePowerControlUpdateButton(SofarEntity, ButtonEntity):
+class ActivePowerControlUpdateButton(SofarEntity[SofarSettingsCoordinator], ButtonEntity):
     """Active Power Control: Update — writes the staged (or last-read) enable flag and limit together."""
 
     _attr_translation_key = "active_power_control_update"
 
-    def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: SofarSettingsCoordinator) -> None:
         super().__init__(coordinator, "active_power_control_update", "active_power_control")
 
     async def async_press(self) -> None:
@@ -86,12 +86,12 @@ class ActivePowerControlUpdateButton(SofarEntity, ButtonEntity):
         await self.coordinator.async_request_refresh()
 
 
-class PassiveTimeoutUpdateButton(SofarEntity, ButtonEntity):
+class PassiveTimeoutUpdateButton(SofarEntity[SofarSettingsCoordinator], ButtonEntity):
     """Passive: Timeout Update — writes the staged (or last-read) timeout and action together."""
 
     _attr_translation_key = "passive_timeout_update"
 
-    def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: SofarSettingsCoordinator) -> None:
         super().__init__(coordinator, "passive_timeout_update", "passive")
 
     async def async_press(self) -> None:
@@ -109,12 +109,12 @@ class PassiveTimeoutUpdateButton(SofarEntity, ButtonEntity):
         await self.coordinator.async_request_refresh()
 
 
-class PassivePowerUpdateButton(SofarEntity, ButtonEntity):
+class PassivePowerUpdateButton(SofarEntity[SofarSettingsCoordinator], ButtonEntity):
     """Passive: Power Update — writes the staged (or last-read) grid power and battery power window together."""
 
     _attr_translation_key = "passive_power_update"
 
-    def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: SofarSettingsCoordinator) -> None:
         super().__init__(coordinator, "passive_power_update", "passive")
 
     async def async_press(self) -> None:
@@ -134,7 +134,7 @@ class PassivePowerUpdateButton(SofarEntity, ButtonEntity):
         await self.coordinator.async_request_refresh()
 
 
-class RtcSyncButton(SofarEntity, ButtonEntity):
+class RtcSyncButton(SofarEntity[SofarSettingsCoordinator], ButtonEntity):
     """RTC: Sync — writes the current local time to the inverter's clock.
 
     Unlike the paired-write buttons above there's no staged value to resolve:
@@ -150,7 +150,7 @@ class RtcSyncButton(SofarEntity, ButtonEntity):
     _attr_translation_key = "rtc_sync"
     _attr_entity_category = EntityCategory.CONFIG
 
-    def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: SofarSettingsCoordinator) -> None:
         super().__init__(coordinator, "rtc_sync", "rtc_sync")
 
     async def async_press(self) -> None:

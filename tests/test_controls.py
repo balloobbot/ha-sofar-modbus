@@ -15,7 +15,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from sofar_modbus.modern import PowerControlFlags
 
 from custom_components.sofar_modbus.const import CONF_MODBUS_ADDR, CONF_READ_EPS, DOMAIN
-from custom_components.sofar_modbus.coordinator import SofarDataUpdateCoordinator
+from custom_components.sofar_modbus.coordinator import SofarSettingsCoordinator
 
 MOCK_CONFIG = {
     "name": "Sofar Inverter",
@@ -79,7 +79,7 @@ async def test_pv_controls_lifecycle(hass: HomeAssistant) -> None:
         await hass.async_block_till_done(wait_background_tasks=True)
 
     ent_reg = er.async_get(hass)
-    coordinator: SofarDataUpdateCoordinator = entry.runtime_data
+    coordinator: SofarSettingsCoordinator = entry.runtime_data.settings
 
     # 1. Remote Switch (immediate write)
     remote_select_id = ent_reg.async_get_entity_id("select", DOMAIN, "SS2ES104N5S445_remote_switch_on_off")
@@ -245,7 +245,7 @@ async def test_hybrid_controls_lifecycle(hass: HomeAssistant) -> None:
         await hass.async_block_till_done(wait_background_tasks=True)
 
     ent_reg = er.async_get(hass)
-    coordinator: SofarDataUpdateCoordinator = entry.runtime_data
+    coordinator: SofarSettingsCoordinator = entry.runtime_data.settings
 
     # 1. Charger Use Mode (immediate write)
     charger_select_id = ent_reg.async_get_entity_id("select", DOMAIN, "SP1XXES100XX_charger_use_mode")
@@ -394,7 +394,7 @@ async def test_button_errors_when_uninitialized_or_comm_failure(hass: HomeAssist
     assert feedin_button_id is not None
 
     # 1. Uninitialized values on device raise HomeAssistantError
-    coord: SofarDataUpdateCoordinator = entry.runtime_data
+    coord: SofarSettingsCoordinator = entry.runtime_data.settings
     coord.device.feed_in.feedin_limitation_mode = None  # type: ignore[assignment]
     with pytest.raises(HomeAssistantError, match="feed-in limitation has not been read"):
         await hass.services.async_call(
@@ -456,7 +456,7 @@ async def test_select_and_hybrid_button_error_branches(hass: HomeAssistant) -> N
         await hass.async_block_till_done(wait_background_tasks=True)
 
     ent_reg = er.async_get(hass)
-    coord: SofarDataUpdateCoordinator = entry.runtime_data
+    coord: SofarSettingsCoordinator = entry.runtime_data.settings
 
     # Remote switch write error
     remote_id = ent_reg.async_get_entity_id("select", DOMAIN, "SP1XXES100XX_remote_switch_on_off")

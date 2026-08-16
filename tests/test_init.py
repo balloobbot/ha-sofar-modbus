@@ -29,10 +29,10 @@ def _seed_pv_inverter(unit: MockModbusUnit, serial: str = "SS2ES104N5S445") -> N
     for i in range(7):
         hi, lo = ord(padded[2 * i]), ord(padded[2 * i + 1])
         unit.holding[0x445 + i] = (hi << 8) | lo
-    # Seed fast tier
+    # Seed what the measurements poll reads
     unit.holding[0x0404] = 2  # Running
     unit.holding[0x0484] = 5000  # 50.00 Hz
-    # Seed slow tier
+    # Seed what the settings poll reads
     unit.holding[0x0684] = 100
     unit.holding[0x1104] = 1
 
@@ -56,7 +56,7 @@ async def test_setup_and_unload_entry(hass: HomeAssistant) -> None:
         await hass.async_block_till_done(wait_background_tasks=True)
 
     assert entry.state is ConfigEntryState.LOADED
-    assert isinstance(entry.runtime_data, SofarDataUpdateCoordinator)
+    assert isinstance(entry.runtime_data.readings, SofarDataUpdateCoordinator)
 
     # Unload
     await hass.config_entries.async_unload(entry.entry_id)
@@ -128,7 +128,7 @@ async def test_setup_entry_loads_offline_when_pre_identified(hass: HomeAssistant
         await hass.async_block_till_done(wait_background_tasks=True)
 
     assert entry.state is ConfigEntryState.LOADED
-    assert isinstance(entry.runtime_data, SofarDataUpdateCoordinator)
+    assert isinstance(entry.runtime_data.readings, SofarDataUpdateCoordinator)
 
 
 async def test_setup_entry_without_pre_identified_serial(hass: HomeAssistant) -> None:
@@ -150,7 +150,7 @@ async def test_setup_entry_without_pre_identified_serial(hass: HomeAssistant) ->
         await hass.async_block_till_done(wait_background_tasks=True)
 
     assert entry.state is ConfigEntryState.LOADED
-    assert entry.runtime_data.device.serial_number == "SS2ES104N5S445"
+    assert entry.runtime_data.readings.device.serial_number == "SS2ES104N5S445"
 
 
 async def test_setup_entry_not_ready_on_unrecognized_serial_on_device(hass: HomeAssistant) -> None:

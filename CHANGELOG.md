@@ -20,13 +20,25 @@ and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged
   `coordinator.py`; a new test (`test_volatile_components_matches_sensor_state_class_metadata`)
   asserts it still matches what `sensor.py`'s metadata would derive, so the two can't silently
   drift apart. No behavior change — same components in the same tiers.
+- The poll is now split by what it reads rather than by how often, following `sofar-modbus`'s
+  own `async_update_readings()` / `async_update_settings()` split (darkrain-nl/sofar-modbus#15).
+  Two coordinators drive one inverter: what it measures, at the scan interval, and what it has
+  been configured to do, every 5 minutes and straight after a write. Each entity attaches to
+  whichever of the two reads its component. This supersedes the hand-maintained
+  `_VOLATILE_COMPONENTS` set above — the library now says which registers are which, and the
+  integration no longer re-implements the poll loop (containment, connection-error re-raise,
+  timeout counting) around it. Only the measurements coordinator still recycles a wedged link.
+  Visible effects: the energy counters (`energy`, `battery_energy`) are measurements, so they
+  now refresh every cycle instead of every 60s, and a settings block that fails no longer
+  affects the measurement entities.
 
 ### Verification
 
-- `pytest -q` — full suite (80 passed).
+- `pytest -q` — full suite (80 passed), against the sofar-modbus branch behind
+  darkrain-nl/sofar-modbus#15.
 - `python tests/lib/test_coordinator.py`, `test_smoke.py`, `test_write_entities.py`,
-  `test_diagnostics_lib.py` — all passed, including the new drift-guard test.
-- `ruff check` / `mypy` clean.
+  `test_diagnostics_lib.py` — all passed, including the new drift-guard tests.
+- `ruff check` / `ruff format --check` / `mypy` clean.
 
 ## [0.6.1] - 2026-08-16
 

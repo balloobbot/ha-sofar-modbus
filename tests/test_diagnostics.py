@@ -86,7 +86,7 @@ async def test_get_diagnostics_with_read_error(hass: HomeAssistant) -> None:
 
     # Fail raw read
     with patch.object(
-        entry.runtime_data.device,
+        entry.runtime_data.readings.device,
         "async_read_raw",
         side_effect=ModbusTimeoutError("Timeout reading raw registers"),
     ):

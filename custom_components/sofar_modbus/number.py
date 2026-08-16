@@ -19,12 +19,12 @@ from homeassistant.const import PERCENTAGE, UnitOfPower, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .coordinator import SofarConfigEntry, SofarDataUpdateCoordinator
+from .coordinator import SofarConfigEntry, SofarSettingsCoordinator
 from .entity import SofarEntity
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
-    coordinator = entry.runtime_data
+    coordinator = entry.runtime_data.settings
     served = coordinator.served_components
     entities: list[NumberEntity] = []
     if "feed_in" in served:
@@ -39,7 +39,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_
     async_add_entities(entities)
 
 
-class FeedInMaxPowerNumber(SofarEntity, NumberEntity):
+class FeedInMaxPowerNumber(SofarEntity[SofarSettingsCoordinator], NumberEntity):
     """FeedIn: Maximum Power — staged; press FeedIn: Update to apply.
 
     The device wants this in 100 W steps (register 1024 is watts / 100); the
@@ -55,7 +55,7 @@ class FeedInMaxPowerNumber(SofarEntity, NumberEntity):
     _attr_native_step = 100
     _attr_mode = NumberMode.BOX
 
-    def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: SofarSettingsCoordinator) -> None:
         super().__init__(coordinator, "feedin_max_power", "feed_in")
 
     @property
@@ -68,7 +68,7 @@ class FeedInMaxPowerNumber(SofarEntity, NumberEntity):
         self.async_write_ha_state()
 
 
-class ActivePowerExportLimitNumber(SofarEntity, NumberEntity):
+class ActivePowerExportLimitNumber(SofarEntity[SofarSettingsCoordinator], NumberEntity):
     """Active Power Control: Export Limit — staged; press Update to apply."""
 
     _attr_translation_key = "active_power_export_limit"
@@ -78,7 +78,7 @@ class ActivePowerExportLimitNumber(SofarEntity, NumberEntity):
     _attr_native_step = 0.1
     _attr_mode = NumberMode.BOX
 
-    def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: SofarSettingsCoordinator) -> None:
         super().__init__(coordinator, "active_power_export_limit", "active_power_control")
 
     @property
@@ -91,7 +91,7 @@ class ActivePowerExportLimitNumber(SofarEntity, NumberEntity):
         self.async_write_ha_state()
 
 
-class PassiveTimeoutNumber(SofarEntity, NumberEntity):
+class PassiveTimeoutNumber(SofarEntity[SofarSettingsCoordinator], NumberEntity):
     """Passive: Timeout — staged; press Passive: Timeout Update to apply.
 
     Register 0x1184 is an unsigned 16-bit seconds count, matching the
@@ -105,7 +105,7 @@ class PassiveTimeoutNumber(SofarEntity, NumberEntity):
     _attr_native_step = 1
     _attr_mode = NumberMode.BOX
 
-    def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: SofarSettingsCoordinator) -> None:
         super().__init__(coordinator, "passive_mode_timeout", "passive")
 
     @property
@@ -118,7 +118,7 @@ class PassiveTimeoutNumber(SofarEntity, NumberEntity):
         self.async_write_ha_state()
 
 
-class PassiveGridPowerNumber(SofarEntity, NumberEntity):
+class PassiveGridPowerNumber(SofarEntity[SofarSettingsCoordinator], NumberEntity):
     """Passive: Desired Grid Power — staged; press Passive: Power Update to apply.
 
     Signed 32-bit watts (register 0x1187), like the two battery-power bounds
@@ -132,7 +132,7 @@ class PassiveGridPowerNumber(SofarEntity, NumberEntity):
     _attr_native_step = 1
     _attr_mode = NumberMode.BOX
 
-    def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: SofarSettingsCoordinator) -> None:
         super().__init__(coordinator, "passive_mode_grid_power", "passive")
 
     @property
@@ -145,7 +145,7 @@ class PassiveGridPowerNumber(SofarEntity, NumberEntity):
         self.async_write_ha_state()
 
 
-class PassiveBatteryPowerMinNumber(SofarEntity, NumberEntity):
+class PassiveBatteryPowerMinNumber(SofarEntity[SofarSettingsCoordinator], NumberEntity):
     """Passive: Minimum Battery Power — staged; press Passive: Power Update to apply."""
 
     _attr_translation_key = "passive_mode_battery_power_min"
@@ -155,7 +155,7 @@ class PassiveBatteryPowerMinNumber(SofarEntity, NumberEntity):
     _attr_native_step = 1
     _attr_mode = NumberMode.BOX
 
-    def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: SofarSettingsCoordinator) -> None:
         super().__init__(coordinator, "passive_mode_battery_power_min", "passive")
 
     @property
@@ -168,7 +168,7 @@ class PassiveBatteryPowerMinNumber(SofarEntity, NumberEntity):
         self.async_write_ha_state()
 
 
-class PassiveBatteryPowerMaxNumber(SofarEntity, NumberEntity):
+class PassiveBatteryPowerMaxNumber(SofarEntity[SofarSettingsCoordinator], NumberEntity):
     """Passive: Maximum Battery Power — staged; press Passive: Power Update to apply."""
 
     _attr_translation_key = "passive_mode_battery_power_max"
@@ -178,7 +178,7 @@ class PassiveBatteryPowerMaxNumber(SofarEntity, NumberEntity):
     _attr_native_step = 1
     _attr_mode = NumberMode.BOX
 
-    def __init__(self, coordinator: SofarDataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: SofarSettingsCoordinator) -> None:
         super().__init__(coordinator, "passive_mode_battery_power_max", "passive")
 
     @property

@@ -6,10 +6,10 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import ATTR_MANUFACTURER, DOMAIN
-from .coordinator import SofarDataUpdateCoordinator
+from .coordinator import SofarCoordinator
 
 
-def build_device_info(coordinator: SofarDataUpdateCoordinator) -> DeviceInfo:
+def build_device_info(coordinator: SofarCoordinator) -> DeviceInfo:
     """The one physical inverter every entity on this config entry belongs to."""
     device = coordinator.device
     serial = device.serial_number
@@ -24,18 +24,20 @@ def build_device_info(coordinator: SofarDataUpdateCoordinator) -> DeviceInfo:
     )
 
 
-class SofarEntity(CoordinatorEntity[SofarDataUpdateCoordinator]):
+class SofarEntity[CoordinatorT: SofarCoordinator](CoordinatorEntity[CoordinatorT]):
     """Base for every Sofar entity — one physical inverter per config entry.
 
     ``component`` is the attribute name on ``coordinator.device`` this entity
     reads or writes (e.g. ``'grid'``, ``'feed_in'``) — used by ``available``
     below so only the entities on a component that actually failed this poll
-    go unavailable, not all of them.
+    go unavailable, not all of them. The coordinator is whichever of the two
+    polls that component: the measurements one, or the settings one whose
+    ``pending`` the write entities stage into.
     """
 
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator: SofarDataUpdateCoordinator, unique_id_suffix: str, component: str) -> None:
+    def __init__(self, coordinator: CoordinatorT, unique_id_suffix: str, component: str) -> None:
         super().__init__(coordinator)
         serial = coordinator.device.serial_number
         assert serial is not None  # set by async_setup(), which the coordinator's first refresh requires
