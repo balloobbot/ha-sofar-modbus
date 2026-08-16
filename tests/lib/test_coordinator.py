@@ -400,6 +400,26 @@ def test_offgrid_output_components_are_volatile() -> None:
     print("offgrid-output-components-are-volatile: PASSED")
 
 
+def test_volatile_components_matches_sensor_state_class_metadata() -> None:
+    """coordinator.py's _VOLATILE_COMPONENTS is hand-maintained, not derived
+    from sensor.py (so the coordinator has no import-time dependency on any
+    platform module — see coordinator.py's module docstring). This guards
+    against the two drifting apart: a new MEASUREMENT sensor row on a
+    component missing from _VOLATILE_COMPONENTS would silently land it in
+    the slow tier.
+    """
+    from homeassistant.components.sensor import SensorStateClass
+
+    from custom_components.sofar_modbus.coordinator import _volatile_components
+    from custom_components.sofar_modbus.sensor import SENSOR_DESCRIPTIONS
+
+    from_sensor_metadata = frozenset(
+        description.component for description in SENSOR_DESCRIPTIONS if description.state_class == SensorStateClass.MEASUREMENT
+    )
+    assert _volatile_components() == from_sensor_metadata
+    print("volatile-components-matches-sensor-state-class-metadata: PASSED")
+
+
 async def main() -> None:
     await test_retry_recovers_a_transient_failure()
     await test_a_failure_that_survives_retry_is_tracked_and_leaves_others_alone()
@@ -416,6 +436,7 @@ async def main() -> None:
     await test_first_poll_only_polls_fast_tier_and_exposes_all_served_components()
     await test_pre_identified_device_initializes_tiers_in_memory()
     test_offgrid_output_components_are_volatile()
+    test_volatile_components_matches_sensor_state_class_metadata()
     print("ALL COORDINATOR TESTS PASSED")
 
 
