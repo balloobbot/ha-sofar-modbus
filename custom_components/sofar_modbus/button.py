@@ -16,6 +16,8 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from modbus_connection import ModbusError
 
+from sofar_modbus.variants import HYBRID, PV, matches
+
 from .coordinator import SofarConfigEntry, SofarDataUpdateCoordinator
 from .entity import SofarEntity
 from .switch import resolve_active_power_control_enabled
@@ -32,7 +34,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_
     if "passive" in served:
         entities.append(PassiveTimeoutUpdateButton(coordinator))
         entities.append(PassivePowerUpdateButton(coordinator))
-    if "rtc_sync" in served:
+    inverter_type = coordinator.device.inverter_type
+    if inverter_type is not None and matches(inverter_type, PV | HYBRID):
         entities.append(RtcSyncButton(coordinator))
     async_add_entities(entities)
 
@@ -135,8 +138,13 @@ class RtcSyncButton(SofarEntity, ButtonEntity):
     """RTC: Sync — writes the current local time to the inverter's clock.
 
     Unlike the paired-write buttons above there's no staged value to resolve:
-    the write is just "now". ``rtc_sync``'s own sensor reports whether it
-    took on the next poll — see ``sync_rtc_result`` in sensor.py.
+    the write is just "now". Gated on PV | HYBRID directly (not on
+    ``"rtc_sync" in served``): upstream plugin_sofar.py declares this button
+    ``allowedtypes=HYBRID | PV`` but its result sensor only ``HYBRID`` — the
+    write and the read-back have different scopes, so a PV inverter gets the
+    button with no confirmation sensor to check afterwards (matching
+    upstream's own "unlikely to work" comment on that button — sofar-modbus's
+    ``async_set_time()`` fires the write unconditionally either way).
     """
 
     _attr_translation_key = "rtc_sync"
