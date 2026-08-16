@@ -10,6 +10,8 @@ and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-08-16
+
 ### Fixed
 
 - The `button.*_sync_clock` entity added in 0.6.0 only appeared on HYBRID inverters. Upstream
@@ -18,6 +20,11 @@ and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged
   the inverter being PV or HYBRID directly, matching upstream, instead of on the HYBRID-only
   sensor's component. PV inverters get the button with no confirmation sensor afterwards, same as
   upstream.
+
+### Verification
+
+- `pytest -q` — full suite (79 passed), including new PV-inverter coverage for the button.
+- `ruff check` / `mypy` clean on changed files.
 
 ## [0.6.0] - 2026-08-16
 
