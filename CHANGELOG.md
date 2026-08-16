@@ -10,6 +10,15 @@ and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged
 
 ## [Unreleased]
 
+### Fixed
+
+- The `button.*_sync_clock` entity added in 0.6.0 only appeared on HYBRID inverters. Upstream
+  `plugin_sofar.py` allows the underlying "Update System Time" write on `HYBRID | PV` — only its
+  separate read-back result sensor (`sync_rtc_result`) is HYBRID-only. The button is now gated on
+  the inverter being PV or HYBRID directly, matching upstream, instead of on the HYBRID-only
+  sensor's component. PV inverters get the button with no confirmation sensor afterwards, same as
+  upstream.
+
 ## [0.6.0] - 2026-08-16
 
 ### Added

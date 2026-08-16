@@ -211,6 +211,20 @@ async def test_pv_controls_lifecycle(hass: HomeAssistant) -> None:
     )
     assert unit.holding[0x1105] == 0
 
+    # 4. RTC Sync button — upstream's plugin_sofar.py allows this on PV inverters
+    # too (only the read-back result sensor is HYBRID-only), so it must exist here.
+    rtc_sync_btn_id = ent_reg.async_get_entity_id("button", DOMAIN, "SS2ES104N5S445_rtc_sync")
+    assert rtc_sync_btn_id is not None
+
+    with patch.object(coordinator.device, "async_set_time") as mock_set_time:
+        await hass.services.async_call(
+            "button",
+            "press",
+            {"entity_id": rtc_sync_btn_id},
+            blocking=True,
+        )
+    mock_set_time.assert_awaited_once_with()
+
 
 async def test_hybrid_controls_lifecycle(hass: HomeAssistant) -> None:
     """Test Charger, EPS, and Passive Mode write entities on a Hybrid inverter."""
