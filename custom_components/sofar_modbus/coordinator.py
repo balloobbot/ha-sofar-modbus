@@ -15,8 +15,8 @@ missing (see the design note this ships alongside):
 - After the first refresh (which still polls everything, the way
   SofarInverter.async_update() does it, to learn what this inverter
   serves), later polls split components into a fast tier (read every
-  cycle) and a slow tier — settings, energy counters, identity, derived
-  from sensor.py's own state_class metadata — read only every
+  cycle) and a slow tier — settings, energy counters, identity, listed
+  in _VOLATILE_COMPONENTS below — read only every
   _SLOW_TIER_EVERY_N_CYCLES-th cycle, cutting total registers read per poll.
 
 Also disconnect()s after repeated timed-out polls to recover a link
@@ -39,7 +39,6 @@ from collections import deque
 from datetime import datetime, timedelta
 from typing import Any, TypeVar, cast
 
-from homeassistant.components.sensor import SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -59,31 +58,38 @@ type SofarConfigEntry = ConfigEntry[SofarDataUpdateCoordinator]
 
 _T = TypeVar("_T")
 
+# Components with at least one sensor.py row whose state_class is MEASUREMENT
+# — these get every-cycle polling; everything else (settings, energy counters,
+# identity, and write-only components like feed_in, active_power_control,
+# passive, charger, remote) lands in the slow tier. Hand-maintained rather than
+# derived from sensor.py so the coordinator doesn't depend on any platform
+# module — keep this in sync with SENSOR_DESCRIPTIONS's state_class values;
+# tests/lib/test_coordinator.py asserts the two don't drift apart.
+# TOTAL/TOTAL_INCREASING counters (energy, battery_energy) are deliberately
+# excluded: the recorder buckets long-term statistics at 5 minutes regardless,
+# so polling those faster wouldn't sharpen their stats.
+_VOLATILE_COMPONENTS: frozenset[str] = frozenset(
+    {
+        "battery_1_2",
+        "battery_3_8",
+        "battery_totals",
+        "grid",
+        "offgrid",
+        "offgrid_single_phase",
+        "offgrid_three_phase",
+        "pv_1_2",
+        "pv_3",
+        "pv_4",
+        "pv_5_6",
+        "pv_7_8",
+        "pv_9_10",
+        "state",
+    }
+)
+
 
 def _volatile_components() -> frozenset[str]:
-    """Component names with at least one 'measurement' row.
-
-    Derived from sensor.py's own SENSOR_DESCRIPTIONS state_class metadata
-    rather than a separately hand-maintained list, so there's one source of
-    truth for what changes often enough to need every-cycle freshness.
-    Components with only counters/settings or no sensor rows at all (write-only
-    components like feed_in, active_power_control, passive, charger, remote)
-    join the slow tier.
-    Imported here, not at module level: sensor.py imports SofarConfigEntry
-    from this module, so a module-level import back would be circular — this
-    one only runs when a poll actually needs it, well after both modules have
-    finished loading.
-
-    Only checks for MEASUREMENT, so TOTAL/TOTAL_INCREASING counters (energy,
-    battery_energy) land in the slow tier too — a deliberate choice, not a
-    side effect: the recorder buckets long-term statistics at 5 minutes
-    regardless, so polling those faster wouldn't sharpen their stats.
-    """
-    from .sensor import SENSOR_DESCRIPTIONS
-
-    return frozenset(
-        description.component for description in SENSOR_DESCRIPTIONS if description.state_class == SensorStateClass.MEASUREMENT
-    )
+    return _VOLATILE_COMPONENTS
 
 
 class SofarDataUpdateCoordinator(DataUpdateCoordinator[UpdateReport]):

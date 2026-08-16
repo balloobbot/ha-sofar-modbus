@@ -10,6 +10,24 @@ and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged
 
 ## [Unreleased]
 
+### Changed
+
+- `coordinator.py`'s fast/slow poll-tier split no longer derives its volatile-component set
+  from `sensor.py`'s `SENSOR_DESCRIPTIONS` at runtime. That derivation gave the coordinator a
+  hidden import-time dependency on the sensor platform, which blocks splitting this integration
+  into platform-by-platform PRs for Home Assistant Core (the coordinator has to exist before
+  `sensor.py` does). `_VOLATILE_COMPONENTS` is now a hand-maintained `frozenset` in
+  `coordinator.py`; a new test (`test_volatile_components_matches_sensor_state_class_metadata`)
+  asserts it still matches what `sensor.py`'s metadata would derive, so the two can't silently
+  drift apart. No behavior change — same components in the same tiers.
+
+### Verification
+
+- `pytest -q` — full suite (80 passed).
+- `python tests/lib/test_coordinator.py`, `test_smoke.py`, `test_write_entities.py`,
+  `test_diagnostics_lib.py` — all passed, including the new drift-guard test.
+- `ruff check` / `mypy` clean.
+
 ## [0.6.1] - 2026-08-16
 
 ### Fixed
