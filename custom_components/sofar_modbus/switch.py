@@ -33,6 +33,8 @@ def resolve_active_power_control_enabled(coordinator: SofarSettingsCoordinator) 
 
 async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     coordinator = entry.runtime_data.settings
+    if coordinator is None:
+        return  # no settings poll means no writable register to build on
     served = coordinator.served_components
     if "active_power_control" in served:
         async_add_entities([ActivePowerControlSwitch(coordinator)])

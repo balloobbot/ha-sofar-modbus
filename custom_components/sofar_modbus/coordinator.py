@@ -10,7 +10,13 @@ One coordinator drives each half on its own interval: the measurements at the
 user's scan interval, the settings every _SETTINGS_INTERVAL — they only change
 when something writes them, and this integration refreshes them straight after
 its own writes. Each entity attaches to whichever of the two polls reads its
-component, so ``available`` follows the poll that actually refreshes it.
+component, so ``available`` follows the poll that actually refreshes it — the
+library says which that is, per component, and this module does not keep a copy
+of that answer.
+
+Not every device class splits: one whose whole map is read-only telemetry has
+nothing to schedule apart, offers only async_update(), and gets a measurements
+coordinator alone with every entity attached to it. See polls_settings_apart().
 
 Both give a failed component one retry before accepting the failure, mirroring
 solax_modbus's transport-level `retries=1` one layer up — modbus_connection
@@ -47,7 +53,8 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 from modbus_connection import ModbusConnection, ModbusConnectionError, ModbusError, ModbusTimeoutError
 
-from sofar_modbus.model import SofarComponentBase, UpdateReport  # the PyPI library, not a self-import — see __init__.py
+from sofar_modbus.legacy.device import SofarLegacyInverter  # the PyPI library, not a self-import — see __init__.py
+from sofar_modbus.model import SofarComponentBase, UpdateReport
 from sofar_modbus.modern.device import SofarInverter
 
 _LOGGER = logging.getLogger(__name__)
@@ -60,43 +67,39 @@ _HEALTH_WINDOW = 60  # ~5min at the 5s base scan interval
 # own display, another Modbus client) within a few minutes.
 _SETTINGS_INTERVAL = timedelta(minutes=5)
 
-# What sofar_modbus reads in async_update_settings(); everything else it serves
-# is a measurement. The library keeps its two poll lists private and publishes
-# only their concatenation (polled_components), so this mirrors them —
-# tests/lib/test_coordinator.py pins it against what a settings poll actually
-# touches, so the two can't drift apart silently.
-SETTINGS_COMPONENTS: frozenset[str] = frozenset(
-    {
-        "active_power_control",
-        "battery_active_control",
-        "battery_config",
-        "battery_config_id",
-        "charger",
-        "eps",
-        "feed_in",
-        "identity",
-        "parallel",
-        "passive",
-        "remote",
-        "rtc_sync",
-    }
-)
-
 type SofarConfigEntry = ConfigEntry[SofarRuntimeData]
 
 _T = TypeVar("_T")
 
 
+def polls_settings_apart(device: SofarInverter | SofarLegacyInverter) -> bool:
+    """Whether this device has settings to schedule apart from its measurements.
+
+    sofar_modbus publishes the split as ``settings_components``; a device class
+    whose whole map is telemetry has neither that nor the two update methods, so
+    its absence is the shape check.
+    """
+    return hasattr(device, "settings_components")
+
+
 @dataclass
 class SofarRuntimeData:
-    """Both of an inverter's polls, for the platforms to attach entities to."""
+    """An inverter's polls, for the platforms to attach entities to.
+
+    ``settings`` is None for a device with nothing to schedule apart; every
+    entity then attaches to ``readings``.
+    """
 
     readings: SofarDataUpdateCoordinator
-    settings: SofarSettingsCoordinator
+    settings: SofarSettingsCoordinator | None
 
     def coordinator_for(self, component: str) -> SofarCoordinator:
-        """Whichever of the two polls reads ``component``."""
-        return self.settings if component in SETTINGS_COMPONENTS else self.readings
+        """Whichever poll reads ``component``, as the library splits them."""
+        if self.settings is None:
+            return self.readings
+        settings_components = self.settings.device.settings_components
+        assert settings_components is not None  # setup runs before the platforms attach; see __init__.py
+        return self.settings if component in settings_components else self.readings
 
 
 class SofarCoordinator(DataUpdateCoordinator[UpdateReport]):
@@ -246,6 +249,8 @@ class SofarDataUpdateCoordinator(SofarCoordinator):
             # identity read that did land, so __init__.py can say so itself
             # instead of this failing as "no component answered".
             return UpdateReport(updated={"identity"}, failed={})
+        if not polls_settings_apart(self.device):
+            return await self.device.async_update()  # its whole map; nothing is left to another poll
         return await self.device.async_update_readings()
 
     async def _async_poll_raised(self, error: ModbusError) -> None:

@@ -24,13 +24,15 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from homeassistant.helpers.update_coordinator import UpdateFailed  # noqa: E402
 from modbus_connection import IllegalDataAddressError, ModbusConnectionError, ModbusTimeoutError  # noqa: E402
 from modbus_connection.mock import MockModbusConnection, MockModbusUnit  # noqa: E402
+from sofar_modbus.legacy.device import SofarLegacyInverter  # noqa: E402
 from sofar_modbus.modern.device import SofarInverter  # noqa: E402
 
 from custom_components.sofar_modbus.coordinator import (  # noqa: E402
     _HEALTH_WINDOW,
-    SETTINGS_COMPONENTS,
     SofarDataUpdateCoordinator,
+    SofarRuntimeData,
     SofarSettingsCoordinator,
+    polls_settings_apart,
 )
 
 
@@ -44,11 +46,14 @@ class _FakeConnection:
         self.disconnect_calls += 1
 
 
+def _ascii_words(text: str, length: int) -> list[int]:
+    """``text`` packed into ``length`` registers, two characters each."""
+    padded = text.ljust(length * 2, "\x00")
+    return [(ord(padded[2 * i]) << 8) | ord(padded[2 * i + 1]) for i in range(length)]
+
+
 def _seed_serial(unit: MockModbusUnit, serial: str) -> None:
-    padded = serial.ljust(14, "\x00")
-    for i in range(7):
-        hi, lo = ord(padded[2 * i]), ord(padded[2 * i + 1])
-        unit.holding[0x445 + i] = (hi << 8) | lo
+    unit.holding[0x445] = _ascii_words(serial, 7)
 
 
 def _coordinator(device: SofarInverter, connection: _FakeConnection) -> SofarDataUpdateCoordinator:
@@ -243,8 +248,9 @@ async def test_each_coordinator_polls_only_its_own_components() -> None:
     readings = await readings_coordinator._async_update_data()
     settings = await settings_coordinator._async_update_data()
 
+    settings_components = set(device.settings_components or ())
     assert {"state", "grid", "energy"} <= readings.updated
-    assert not readings.updated & SETTINGS_COMPONENTS, "a measurements poll must not read settings"
+    assert not readings.updated & settings_components, "a measurements poll must not read settings"
     assert {"identity", "feed_in", "remote", "charger"} <= settings.updated
     assert not settings.updated & {"state", "grid", "energy"}, "a settings poll must not read measurements"
     assert readings.updated | settings.updated == set(device.polled_components or ())
@@ -377,35 +383,46 @@ async def test_pre_identified_device_polls_without_reading_the_serial() -> None:
     print("pre-identified-device-polls-without-reading-the-serial: PASSED")
 
 
-def test_offgrid_output_components_are_measurements() -> None:
-    """Regression guard for issue #46: offgrid_single_phase/offgrid_three_phase
-    are live electrical output and must be read every cycle, not with the
-    settings.
-    """
-    assert "offgrid_single_phase" not in SETTINGS_COMPONENTS
-    assert "offgrid_three_phase" not in SETTINGS_COMPONENTS
-    print("offgrid-output-components-are-measurements: PASSED")
+async def test_each_entity_attaches_to_the_poll_that_reads_its_component() -> None:
+    """Routing follows the library's own split, not a copy of it here.
 
-
-async def test_settings_components_matches_the_librarys_own_split() -> None:
-    """coordinator.py's SETTINGS_COMPONENTS mirrors sofar_modbus's own settings
-    poll list, which the library keeps private (see coordinator.py). This
-    guards against the two drifting apart: a component the library moves
-    between its two polls would otherwise leave entities attached to the
-    coordinator that no longer reads them.
+    Includes the regression guard for issue #46: offgrid_single_phase and
+    offgrid_three_phase are live electrical output, so they belong to the
+    measurements poll, not the settings one.
     """
     unit = MockModbusConnection().for_unit(1)
-    _seed_serial(unit, "SP1XXES100XX")
-    device = SofarInverter(unit, read_eps=True, read_pm=True)  # the widest set of components served
+    device = _device(unit)
+    readings_coordinator = _coordinator(device, _FakeConnection())
+    settings_coordinator = _settings_coordinator(device)
+    data = SofarRuntimeData(readings_coordinator, settings_coordinator)
+    await readings_coordinator._async_update_data()  # settles the split
 
-    settings = await device.async_update_settings()
-    readings = await device.async_update_readings()
-    polled = set(device.polled_components or ())
+    for name in ("feed_in", "charger", "identity", "passive"):
+        assert data.coordinator_for(name) is settings_coordinator, name
+    for name in ("state", "grid", "energy", "offgrid_single_phase", "offgrid_three_phase"):
+        assert data.coordinator_for(name) is readings_coordinator, name
+    print("each-entity-attaches-to-the-poll-that-reads-it: PASSED")
 
-    assert settings.updated | set(settings.failed) == SETTINGS_COMPONENTS & polled
-    assert readings.updated | set(readings.failed) == polled - SETTINGS_COMPONENTS
-    assert SETTINGS_COMPONENTS <= polled, "every mirrored name should still be one this inverter serves"
-    print("settings-components-matches-the-librarys-own-split: PASSED")
+
+async def test_a_device_without_settings_polls_through_one_coordinator() -> None:
+    """SofarLegacyInverter's map is read-only telemetry: it offers async_update()
+    alone, so the measurements coordinator polls all of it and every entity
+    attaches there — including battery_settings, the one register on that
+    generation that reads like a setting but is not scheduled apart.
+    """
+    unit = MockModbusConnection().for_unit(1)
+    unit.input[0x2002] = _ascii_words("SM1E1234567890", 6)  # a single-phase legacy hybrid
+    device = SofarLegacyInverter(unit)
+    assert not polls_settings_apart(device)
+
+    coordinator = _coordinator(device, _FakeConnection())  # type: ignore[arg-type]
+    data = SofarRuntimeData(coordinator, None)
+
+    report = await coordinator._async_update_data()
+    assert report.updated == set(device.polled_components or ()), "one poll covers the whole map"
+    for name in ("storage_block", "hybrid_pv_1", "battery_settings"):
+        assert data.coordinator_for(name) is coordinator, name
+    print("device-without-settings-polls-through-one-coordinator: PASSED")
 
 
 async def main() -> None:
@@ -423,8 +440,8 @@ async def main() -> None:
     await test_refusal_on_first_component_is_contained()
     await test_first_poll_reads_the_measurements_and_exposes_all_served_components()
     await test_pre_identified_device_polls_without_reading_the_serial()
-    test_offgrid_output_components_are_measurements()
-    await test_settings_components_matches_the_librarys_own_split()
+    await test_each_entity_attaches_to_the_poll_that_reads_its_component()
+    await test_a_device_without_settings_polls_through_one_coordinator()
     print("ALL COORDINATOR TESTS PASSED")
 
 

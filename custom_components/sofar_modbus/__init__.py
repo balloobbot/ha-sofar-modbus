@@ -28,7 +28,13 @@ from sofar_modbus.modern.device import SofarInverter, identify
 
 from .connection import build_connection, unit_id
 from .const import CONF_READ_EPS, DEFAULT_SCAN_INTERVAL, DOMAIN
-from .coordinator import SofarConfigEntry, SofarDataUpdateCoordinator, SofarRuntimeData, SofarSettingsCoordinator
+from .coordinator import (
+    SofarConfigEntry,
+    SofarDataUpdateCoordinator,
+    SofarRuntimeData,
+    SofarSettingsCoordinator,
+    polls_settings_apart,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,7 +53,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry) -> boo
         device.prime(serial, model)
 
     coordinator = SofarDataUpdateCoordinator(hass, entry, connection, device, DEFAULT_SCAN_INTERVAL)
-    settings_coordinator = SofarSettingsCoordinator(hass, entry, device)
+    settings_coordinator = SofarSettingsCoordinator(hass, entry, device) if polls_settings_apart(device) else None
 
     if not device.inverter_type:
         # Fallback for entries where inverter type could not be determined in-memory:
@@ -67,14 +73,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: SofarConfigEntry) -> boo
 
         async def _async_startup_refresh() -> None:
             await coordinator.async_refresh()
-            await settings_coordinator.async_refresh()
+            if settings_coordinator is not None:
+                await settings_coordinator.async_refresh()
 
         entry.async_create_background_task(
             hass,
             _async_startup_refresh(),
             name=f"{DOMAIN}_{entry.unique_id}_startup_refresh",
         )
-    else:
+    elif settings_coordinator is not None:
         entry.async_create_background_task(
             hass,
             settings_coordinator.async_refresh(),

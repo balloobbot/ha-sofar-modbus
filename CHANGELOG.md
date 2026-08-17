@@ -31,13 +31,20 @@ and Home Assistant Core's own tag format) — versions before 0.3.15 were tagged
   Visible effects: the energy counters (`energy`, `battery_energy`) are measurements, so they
   now refresh every cycle instead of every 60s, and a settings block that fails no longer
   affects the measurement entities.
+- Which of the two coordinators an entity attaches to now comes from the library itself
+  (`SofarInverter.settings_components`, added for this) rather than from a `SETTINGS_COMPONENTS`
+  frozenset of component names copied into `coordinator.py` and kept in step by hand. A device
+  class with nothing to schedule apart — `SofarLegacyInverter`, whose map is read-only telemetry
+  and which therefore has no settings poll at all — now gets no settings coordinator, polls its
+  whole map through `async_update()`, and hangs every entity off that one coordinator.
 
 ### Verification
 
 - `pytest -q` — full suite (80 passed), against the sofar-modbus branch behind
   darkrain-nl/sofar-modbus#15.
 - `python tests/lib/test_coordinator.py`, `test_smoke.py`, `test_write_entities.py`,
-  `test_diagnostics_lib.py` — all passed, including the new drift-guard tests.
+  `test_diagnostics_lib.py` — all passed, including the new per-component routing test and the
+  read-only-device one.
 - `ruff check` / `ruff format --check` / `mypy` clean.
 
 ## [0.6.1] - 2026-08-16
